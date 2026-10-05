@@ -1,0 +1,1831 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Midterm Examination: Practical Nursing & Medical Terminology</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- React and ReactDOM CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <!-- Babel compiler for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Chakra+Petch:wght@500;700&display=swap');
+    
+    body {
+      font-family: 'Sarabun', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+    }
+
+    .font-mono-tech {
+      font-family: 'Chakra Petch', monospace;
+    }
+
+    /* ป้องกันการลากรูปหรือเลือกข้อความ */
+    * {
+      -webkit-touch-callout: none;
+    }
+
+    @media print {
+      .no-print { 
+        display: none !important; 
+      }
+      html, body { 
+        background-color: white !important; 
+        color: #000000 !important;
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      #root, .min-h-screen {
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+        display: block !important;
+        background: white !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      .max-w-4xl {
+        max-width: 100% !important;
+        width: 100% !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      .bg-blue-50\/50 {
+        background-color: #f0f7ff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-900 min-h-screen text-slate-800 antialiased selection:bg-none">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useRef, useCallback } = React;
+
+    // คลังข้อสอบกลางภาค 60 ข้อ ฉบับสมบูรณ์ (Midterm Examination for PN Students)
+    const MIDTERM_QUESTIONS = [
+      {
+        id: 1,
+        category: "Phonetics & Pronunciation",
+        question: "A nursing assistant student looks up the word tachycardia in a medical dictionary app. Besides the definition, why are audio pronunciation files helpful?",
+        options: [
+          "They help the student pronounce medical words correctly to prevent errors.",
+          "They give a list of medical tool companies.",
+          "They show the history of heart surgery.",
+          "They translate common English words into other languages."
+        ],
+        answer: 0,
+        rationale: "Audio files with IPA guide students on correct pronunciation to prevent clinical errors with similar-sounding medical terms."
+      },
+      {
+        id: 2,
+        category: "Phonetics & Pronunciation",
+        question: "When reading phonetic pronunciation guides, a student sees the IPA symbol /æ/ in the word abdomen (/ˈæbdəmən/). Which Thai vowel sound matches this symbol?",
+        options: [
+          "Long 'ee' sound",
+          "Short 'ae' sound (สระแอ)",
+          "Long 'aw' sound",
+          "Short 'eh' sound"
+        ],
+        answer: 1,
+        rationale: "The IPA symbol /æ/ represents the short 'ae' vowel sound found in abdomen or cat."
+      },
+      {
+        id: 3,
+        category: "Information Search",
+        question: "A student needs detailed information about a disease, including its causes, symptoms, and care steps. Which source should the student use?",
+        options: [
+          "A general English-Thai dictionary",
+          "A medical thesaurus",
+          "A medical encyclopedia such as MedlinePlus or MSD Manuals",
+          "An English grammar handbook"
+        ],
+        answer: 2,
+        rationale: "Medical encyclopedias (MedlinePlus, MSD Manuals) give full factual details on diseases, treatments, and care steps."
+      },
+      {
+        id: 4,
+        category: "Word Building (Lego Principle)",
+        question: "According to the 'Lego Principle' for building medical words, what are the word parts and meaning of Pericarditis?",
+        options: [
+          "Peri- (inside) + cardi (heart) + -itis (tumor) = A tumor inside the heart",
+          "Peri- (around) + cardi (heart) + -itis (inflammation) = Inflammation of the tissue around the heart",
+          "Peri- (above) + cardi (heart) + -itis (pain) = Severe pain above the heart",
+          "Peri- (under) + cardi (heart) + -itis (cut) = A surgical cut under the heart"
+        ],
+        answer: 1,
+        rationale: "Peri- (around) + cardi (heart) + -itis (inflammation) means inflammation of the pericardium tissue around the heart."
+      },
+      {
+        id: 5,
+        category: "Medical Terminology (Prefixes)",
+        question: "Which pair of medical prefixes have opposite meanings?",
+        options: [
+          "Hyper- and Poly-",
+          "Brady- and Tachy-",
+          "Dys- and Mal-",
+          "Endo- and Intra-"
+        ],
+        answer: 1,
+        rationale: "Brady- means slow (ช้า) and Tachy- means fast (เร็ว), making them opposite prefixes."
+      },
+      {
+        id: 6,
+        category: "Medical Terminology (Roots & Suffixes)",
+        question: "A patient's chart says Gastritis. Based on the root word and suffix, what condition does the patient have?",
+        options: [
+          "Inflammation of the liver",
+          "Inflammation of the stomach",
+          "Tumor in the large intestine",
+          "Severe kidney pain"
+        ],
+        answer: 1,
+        rationale: "The root gastr/o means stomach and -itis means inflammation, so Gastritis is stomach inflammation (กระเพาะอาหารอักเสบ)."
+      },
+      {
+        id: 7,
+        category: "Medical Terminology (Suffixes)",
+        question: "A patient has a surgery called an Appendectomy. What does the suffix -ectomy mean?",
+        options: [
+          "Looking inside with a scope",
+          "Surgical removal of a body part",
+          "Making a new opening",
+          "Cutting into an organ"
+        ],
+        answer: 1,
+        rationale: "The suffix -ectomy means surgical excision/removal of a tissue or organ (การผ่าตัดเอาออก)."
+      },
+      {
+        id: 8,
+        category: "Nursing Documentation",
+        question: "Which sentence is written in a clear and direct way for nursing documentation?",
+        options: [
+          "An increase in heart rate was seen by the nurse.",
+          "The nursing assistant checked the patient's vital signs.",
+          "The patient had pain yesterday and now says it went away.",
+          "A high temperature was found at 10 AM."
+        ],
+        answer: 1,
+        rationale: "Clear, direct Subject + Active Verb + Object sentences ('The nursing assistant checked...') are standard in clinical charting."
+      },
+      {
+        id: 9,
+        category: "Assessment Framework (OLD CARTS)",
+        question: "A nursing assistant asks a patient with chest pain: 'When did the pain start?' Which part of the OLD CARTS model is the assistant checking?",
+        options: [
+          "Location",
+          "Onset",
+          "Duration",
+          "Severity"
+        ],
+        answer: 1,
+        rationale: "Asking when a symptom started assesses the 'Onset' (จุดเริ่มต้น/เวลาที่เริ่มมีอาการ) in OLD CARTS."
+      },
+      {
+        id: 10,
+        category: "Assessment Framework (OLD CARTS)",
+        question: "Using the OLD CARTS model, how should a nursing assistant check the 'Severity' of a patient's pain?",
+        options: [
+          "Ask if the pain moves to the arm or back.",
+          "Ask what makes the pain better or worse.",
+          "Ask the patient to rate the pain on a scale from 0 to 10.",
+          "Ask if the pain feels sharp or dull."
+        ],
+        answer: 2,
+        rationale: "Severity is assessed using a standard numeric pain score rating (0 to 10 scale)."
+      },
+      {
+        id: 11,
+        category: "Reading Techniques in Healthcare",
+        question: "A nurse asks the assistant to find a temperature reading taken at 14:00 on a 5-page chart. Which reading method should the assistant use?",
+        options: [
+          "Skimming",
+          "Scanning",
+          "Intensive Reading",
+          "Critical Reading"
+        ],
+        answer: 1,
+        rationale: "Scanning is searching rapidly through text to locate a specific keyword or data point (such as 14:00 or a temperature)."
+      },
+      {
+        id: 12,
+        category: "Reading Techniques in Healthcare",
+        question: "A student wants to quickly get the main idea of a new equipment manual without reading every word. Which reading method is best?",
+        options: [
+          "Scanning",
+          "Skimming",
+          "Proofreading",
+          "Phonetic analysis"
+        ],
+        answer: 1,
+        rationale: "Skimming involves quickly reading headers and overview sentences to grasp the general idea/gist."
+      },
+      {
+        id: 13,
+        category: "Medication Label Reading",
+        question: "A prescription label says: 'Amoxicillin 250 mg | Take 1 capsule 3 times daily with food | Finish all medication | Duration: 10 days.' What should the assistant remind the patient to do?",
+        options: [
+          "Stop taking the medicine as soon as they feel better.",
+          "Take the medicine on an empty stomach.",
+          "Take 1 capsule 3 times a day with food and finish all 10 days.",
+          "Take 3 capsules once a day at bedtime."
+        ],
+        answer: 2,
+        rationale: "Patients must complete the full antibiotic course (all 10 days) with food as directed to prevent antibiotic resistance."
+      },
+      {
+        id: 14,
+        category: "Medication Safety",
+        question: "A medicine label reads: 'Paracetamol 500 mg | Take 1-2 tablets every 4-6 hours as needed | Warning: Do not take more than 8 tablets in 24 hours.' What is the maximum number of tablets the patient can safely take in one day?",
+        options: [
+          "4 tablets",
+          "6 tablets",
+          "8 tablets",
+          "10 tablets"
+        ],
+        answer: 2,
+        rationale: "The maximum safe daily dose stated is 8 tablets (4,000 mg) in 24 hours to prevent hepatotoxicity."
+      },
+      {
+        id: 15,
+        category: "Hospital Safety Signage",
+        question: "In a hospital hallway, an assistant sees a yellow sign showing a person slipping. What does this sign mean?",
+        options: [
+          "Emergency Exit",
+          "Wet Floor",
+          "Isolation Area",
+          "No Smoking"
+        ],
+        answer: 1,
+        rationale: "A yellow cautionary sign showing a slipping person indicates a slippery 'Wet Floor' fall hazard."
+      },
+      {
+        id: 16,
+        category: "Patient Communication",
+        question: "A patient says: 'I have a bad headache.' Which question should the assistant ask next to check the pain level?",
+        options: [
+          "What time did you wake up today?",
+          "On a scale of 1 to 10, how bad is the pain?",
+          "Did you bring your own medicine from home?",
+          "Why didn't you take Paracetamol earlier?"
+        ],
+        answer: 1,
+        rationale: "Using the 1-10 numeric pain rating scale is the standard, objective method to quantify pain severity."
+      },
+      {
+        id: 17,
+        category: "Clinical Care Protocol",
+        question: "What is the correct order of steps when entering a patient's room to perform basic care?",
+        options: [
+          "Measure vital signs immediately, ask the patient's name, and leave.",
+          "Greet the patient, state your name and role, check the ID wristband, explain what you will do, and leave the call light nearby.",
+          "Give the patient medicine, ask if they feel better, and inform the doctor.",
+          "Look at the room number, do the care, and leave quietly without talking."
+        ],
+        answer: 1,
+        rationale: "Professional nursing protocol: Greet, identify self, verify two patient identifiers (ID band), explain care, and ensure safety (call bell within reach)."
+      },
+      {
+        id: 18,
+        category: "Hospital Organization",
+        question: "A patient is seriously injured in a car accident and brought by ambulance. Which department receives this patient first?",
+        options: [
+          "Intensive Care Unit (ICU)",
+          "Emergency Room (ER)",
+          "Outpatient Department (OPD)",
+          "Inpatient Department (IPD)"
+        ],
+        answer: 1,
+        rationale: "The Emergency Room (ER) is designated for immediate trauma resuscitation and initial life-saving interventions."
+      },
+      {
+        id: 19,
+        category: "Hospital Organization",
+        question: "A patient needs a breathing machine (ventilator) and 24-hour continuous care after surgery. Which unit should this patient go to?",
+        options: [
+          "Radiology Department",
+          "General Ward",
+          "Intensive Care Unit (ICU)",
+          "Physical Therapy Department"
+        ],
+        answer: 2,
+        rationale: "The Intensive Care Unit (ICU) is equipped for continuous hemodynamic monitoring and mechanical ventilatory support."
+      },
+      {
+        id: 20,
+        category: "Hospital Classification",
+        question: "Patient A sees a doctor for a cough and goes home the same day. Patient B stays in the hospital bed for 3 nights. How are these two patients classified?",
+        options: [
+          "Both are Inpatients (IPD).",
+          "Patient A is an Outpatient (OPD); Patient B is an Inpatient (IPD).",
+          "Patient A is an Inpatient (IPD); Patient B is an Outpatient (OPD).",
+          "Both are Emergency Room (ER) patients."
+        ],
+        answer: 1,
+        rationale: "Same-day clinic patients are Outpatients (OPD); admitted overnight patients are Inpatients (IPD)."
+      },
+      {
+        id: 21,
+        category: "Hospital Departments",
+        question: "A patient recovering from knee surgery needs help learning how to walk with a walker. Which department provides this care?",
+        options: [
+          "Laboratory",
+          "Pharmacy",
+          "Radiology Department",
+          "Physical Therapy Department"
+        ],
+        answer: 3,
+        rationale: "Physical Therapy provides gait training, mobility rehabilitation, and muscle strengthening."
+      },
+      {
+        id: 22,
+        category: "Medical Equipment",
+        question: "Which medical tool is used to listen to a patient's heart and lung sounds?",
+        options: [
+          "Thermometer",
+          "Stethoscope",
+          "Blood Pressure Cuff",
+          "Syringe"
+        ],
+        answer: 1,
+        rationale: "A stethoscope is used for auscultation of heart, breath, and abdominal bowel sounds."
+      },
+      {
+        id: 23,
+        category: "Medical Equipment & Patient Safety",
+        question: "A weak patient in bed cannot walk to the bathroom to pass urine. Which tool should the nursing assistant use to help the patient in bed?",
+        options: [
+          "Stretcher",
+          "IV Pole",
+          "Bedpan",
+          "Wheelchair"
+        ],
+        answer: 2,
+        rationale: "A bedpan is used for urination and bowel movements for bedridden, non-ambulatory patients."
+      },
+      {
+        id: 24,
+        category: "Clinical Symptoms",
+        question: "A patient in bed looks pale and says: 'I feel weak, uneasy, and generally unwell.' Which clinical term describes this feeling?",
+        options: [
+          "Pyrexia",
+          "Malaise",
+          "Cachexia",
+          "Pruritus"
+        ],
+        answer: 1,
+        rationale: "Malaise refers to a generalized feeling of bodily discomfort, weakness, or lethargy."
+      },
+      {
+        id: 25,
+        category: "Clinical Symptoms",
+        question: "A patient with advanced cancer has lost a lot of weight and muscle, appearing extremely thin and weak. Which term describes this condition?",
+        options: [
+          "Anorexia",
+          "Malaise",
+          "Cachexia",
+          "Edema"
+        ],
+        answer: 2,
+        rationale: "Cachexia is profound wasting, severe weight loss, and muscle atrophy resulting from severe chronic disease."
+      },
+      {
+        id: 26,
+        category: "Clinical Symptoms",
+        question: "A patient with severe asthma is sweating heavily with cold, clammy skin. Which term matches this sweating?",
+        options: [
+          "Rigors",
+          "Diaphoresis",
+          "Pyrexia",
+          "Cyanosis"
+        ],
+        answer: 1,
+        rationale: "Diaphoresis refers to profuse, excessive sweating, often accompanied by cold, clammy skin."
+      },
+      {
+        id: 27,
+        category: "Neurological Symptoms",
+        question: "A patient says: 'Whenever I stand up, I feel like the whole room is spinning around me.' How should the assistant document this?",
+        options: [
+          "Syncope",
+          "Presyncope",
+          "Vertigo",
+          "Paresthesia"
+        ],
+        answer: 2,
+        rationale: "Vertigo is an illusion of motion where the patient perceives that they or their surroundings are spinning."
+      },
+      {
+        id: 28,
+        category: "Medical Terminology Differentiation",
+        question: "Patient X has trouble swallowing food. Patient Y has trouble speaking after a stroke. Which medical terms match Patient X and Patient Y?",
+        options: [
+          "Dysphasia and Dysphagia",
+          "Dysphagia and Dysphasia",
+          "Dysphagia and Paresthesia",
+          "Vertigo and Tinnitus"
+        ],
+        answer: 1,
+        rationale: "Dysphagia (-phagia = swallow) is difficulty swallowing; Dysphasia (-phasia = speech) is difficulty with speech."
+      },
+      {
+        id: 29,
+        category: "Nursing Interventions",
+        question: "A patient with heart failure has trouble breathing while lying flat in bed (Orthopnea). What nursing action helps the patient breathe easier?",
+        options: [
+          "Keep the room completely dark.",
+          "Raise the head of the bed up.",
+          "Stop giving water without a doctor's order.",
+          "Lay the patient completely flat on their back."
+        ],
+        answer: 1,
+        rationale: "Elevating the head of the bed (Fowler's position) reduces venous return to the heart and allows better lung expansion."
+      },
+      {
+        id: 30,
+        category: "Clinical Signs",
+        question: "A patient vomits dark material that looks like 'coffee grounds.' Which term describes this type of vomiting?",
+        options: [
+          "Melena",
+          "Hematemesis",
+          "Hemoptysis",
+          "Hematochezia"
+        ],
+        answer: 1,
+        rationale: "Hematemesis is vomiting of blood or altered coffee-ground material indicating upper gastrointestinal bleeding."
+      },
+      {
+        id: 31,
+        category: "Clinical Signs",
+        question: "A liver failure patient has yellow skin and eyes, and a swollen stomach filled with fluid. Which two terms describe these signs?",
+        options: [
+          "Edema and Ascites",
+          "Jaundice and Ascites",
+          "Jaundice and Edema",
+          "Cyanosis and Dyspepsia"
+        ],
+        answer: 1,
+        rationale: "Jaundice (icterus) is yellow discoloration of tissues; Ascites is abnormal accumulation of fluid in the peritoneal cavity."
+      },
+      {
+        id: 32,
+        category: "Clinical Symptoms",
+        question: "Patient A complains of a constant ringing noise in the ears. Patient B complains of severe skin itching. Which terms describe these problems?",
+        options: [
+          "Vertigo and Urticaria",
+          "Tinnitus and Pruritus",
+          "Tinnitus and Erythema",
+          "Diplopia and Pruritus"
+        ],
+        answer: 1,
+        rationale: "Tinnitus is ringing/buzzing perception in the ear; Pruritus is the clinical term for itching."
+      },
+      {
+        id: 33,
+        category: "Dermatological Signs",
+        question: "After an insect bite, a patient develops red, raised, itchy bumps on the skin. What is the medical term for these bumps?",
+        options: [
+          "Erythema",
+          "Edema",
+          "Urticaria",
+          "Cachexia"
+        ],
+        answer: 2,
+        rationale: "Urticaria (hives/wheals) are raised, pruritic erythematous skin lesions resulting from histamine release."
+      },
+      {
+        id: 34,
+        category: "Respiratory Signs",
+        question: "A patient with a lung infection has bluish skin on the lips and fingers (Cyanosis). What does this show?",
+        options: [
+          "High body temperature",
+          "Low oxygen levels in the tissues",
+          "High blood sugar",
+          "Stomach bleeding"
+        ],
+        answer: 1,
+        rationale: "Cyanosis is a bluish discoloration of the skin and mucous membranes indicating hypoxemia (low oxygenation)."
+      },
+      {
+        id: 35,
+        category: "Musculoskeletal Symptoms",
+        question: "Patient A has knee joint pain. Patient B has muscle pain after exercise. What are the correct terms for these two conditions?",
+        options: [
+          "Arthralgia and Myalgia",
+          "Arthritis and Arthralgia",
+          "Myalgia and Arthritis",
+          "Myalgia and Paresthesia"
+        ],
+        answer: 0,
+        rationale: "Arthralgia (arthr/o = joint, -algia = pain) means joint pain; Myalgia (my/o = muscle) means muscle pain."
+      },
+      {
+        id: 36,
+        category: "Specimen Collection",
+        question: "Why is a 'midstream' urine sample collected instead of catching the very first part of the urine stream?",
+        options: [
+          "The first part of urine washes away skin germs from the outside area.",
+          "The middle part of urine has the highest level of medicine.",
+          "The last part of urine breaks blood cells.",
+          "The lab rejects urine collected in the morning."
+        ],
+        answer: 0,
+        rationale: "Discarding the initial void flushes normal skin and urethral flora, preventing contamination of the specimen."
+      },
+      {
+        id: 37,
+        category: "Specimen Collection",
+        question: "A patient needs a 24-hour urine collection. What should the assistant tell the patient to do?",
+        options: [
+          "Collect only the first morning urine and throw away the rest.",
+          "Collect all urine passed over a full 24-hour period in a special container.",
+          "Collect one sample after fasting for 12 hours.",
+          "Collect a stool sample along with every urine sample."
+        ],
+        answer: 1,
+        rationale: "A 24-hour urine test requires collecting all urine produced over an exact 24-hour timeframe in a preservative container."
+      },
+      {
+        id: 38,
+        category: "Specimen Collection",
+        question: "A patient gives the assistant a cup filled with clear saliva from the mouth for a lung test. What should the assistant explain?",
+        options: [
+          "'This is correct; saliva is what the lab tests.'",
+          "'We need sputum (phlegm) coughed up from deep in your lungs, not saliva from your mouth.'",
+          "'This is fine if we add water to it.'",
+          "'Saliva is acceptable only if collected at night.'"
+        ],
+        answer: 1,
+        rationale: "Lower respiratory testing requires deep bronchial sputum/phlegm, as saliva cannot identify pulmonary pathogens."
+      },
+      {
+        id: 39,
+        category: "Phlebotomy Equipment",
+        question: "What is the name of the elastic band tied around a patient's arm during blood collection to make veins easier to see?",
+        options: [
+          "Blood Pressure Cuff",
+          "Tourniquet",
+          "Bandage",
+          "Gauze"
+        ],
+        answer: 1,
+        rationale: "A tourniquet temporarily restricts venous return to distend veins for easier venipuncture."
+      },
+      {
+        id: 40,
+        category: "Phlebotomy Procedure",
+        question: "After drawing blood into a purple-top tube (containing EDTA), what must the assistant or phlebotomist do right away?",
+        options: [
+          "Shake the tube hard to break the blood cells.",
+          "Gently turn the tube upside down 8 to 10 times to mix the blood with the anti-clotting chemical.",
+          "Keep the tube still so the blood clots quickly.",
+          "Place the tube under a bright lamp."
+        ],
+        answer: 1,
+        rationale: "Gentle inversion 8-10 times mixes blood with the anticoagulant EDTA without causing mechanical hemolysis."
+      },
+      {
+        id: 41,
+        category: "Infection Control & Lab Safety",
+        question: "Why must the skin be cleaned very carefully with antiseptic before drawing a Blood Culture sample?",
+        options: [
+          "To stop skin bacteria from getting into the sample and causing a false result.",
+          "To keep the patient from sweating.",
+          "To stop blood cells from breaking inside the tube.",
+          "To help the blood tube fill faster."
+        ],
+        answer: 0,
+        rationale: "Aseptic skin disinfection prevents skin commensals from entering blood culture bottles, avoiding false-positive diagnoses."
+      },
+      {
+        id: 42,
+        category: "Lab Specimen Integrity",
+        question: "Why will the laboratory reject a stool sample cup if the lid is loose and open?",
+        options: [
+          "Air makes the sample grow hives.",
+          "Open cups can leak and get contaminated with outside germs.",
+          "Stool samples must always be mixed with liquid.",
+          "Open cups cause bad urine test results."
+        ],
+        answer: 1,
+        rationale: "Loose specimen containers pose biohazard leaks, evaporation, and external contamination, violating specimen integrity criteria."
+      },
+      {
+        id: 43,
+        category: "Medical Abbreviations",
+        question: "What does the abbreviation CC stand for in a patient's chart?",
+        options: [
+          "Critical Care",
+          "Chief Complaint",
+          "Complete Blood Count",
+          "Chronic Condition"
+        ],
+        answer: 1,
+        rationale: "In medical records, CC stands for Chief Complaint (อาการสำคัญที่นำผู้ป่วยมาโรงพยาบาล)."
+      },
+      {
+        id: 44,
+        category: "Medical Abbreviations",
+        question: "A chart says: 'PMH: Diabetes Mellitus (DM). U/D: Asthma.' What do PMH and U/D stand for?",
+        options: [
+          "Present Medical Condition / Unknown Diagnosis",
+          "Past Medical History / Underlying Disease",
+          "Patient Medical Health / Urgent Treatment",
+          "Primary Medical History / Unit Department"
+        ],
+        answer: 1,
+        rationale: "PMH = Past Medical History (ประวัติการเจ็บป่วยในอดีต); U/D = Underlying Disease (โรคประจำตัว)."
+      },
+      {
+        id: 45,
+        category: "Vital Signs",
+        question: "When a nurse asks an assistant to check a patient's V/S, what should be measured?",
+        options: [
+          "Vision, Speech, Hearing, Balance",
+          "Blood Pressure, Heart Rate/Pulse Rate, Respiratory Rate, Temperature",
+          "Blood Sugar, Weight, Height, BMI",
+          "Water Intake, Water Output, Pain Score, Consciousness"
+        ],
+        answer: 1,
+        rationale: "Vital signs (V/S) include BP, HR/Pulse, RR, and Temperature (สัญญานชีพพื้นฐาน 4 อย่าง)."
+      },
+      {
+        id: 46,
+        category: "Medication Administration",
+        question: "A doctor orders medication PO BID. How should this medicine be given?",
+        options: [
+          "By mouth, twice a day",
+          "By vein injection, 3 times a day",
+          "By muscle injection, 4 times a day",
+          "Under the skin, once a day at bedtime"
+        ],
+        answer: 0,
+        rationale: "PO (Per Os) = by mouth (รับประทานทางปาก); BID (Bis In Die) = twice a day (วันละ 2 ครั้ง)."
+      },
+      {
+        id: 47,
+        category: "Medical Abbreviations",
+        question: "Which abbreviation stands for a broken bone (fracture) in medical notes?",
+        options: [
+          "Tx",
+          "Fx",
+          "Dx",
+          "Rx"
+        ],
+        answer: 1,
+        rationale: "Fx stands for Fracture (กระดูกหัก); Tx = Treatment, Dx = Diagnosis, Rx = Prescription."
+      },
+      {
+        id: 48,
+        category: "Laboratory Abbreviations",
+        question: "Which option correctly matches these standard lab test abbreviations: CBC, FBS, BUN, and Cr?",
+        options: [
+          "CBC = Complete Blood Count; FBS = Fasting Blood Sugar; BUN = Blood Urea Nitrogen; Cr = Creatinine",
+          "CBC = Cardiac Blood Culture; FBS = Fluid Blood Specimen; BUN = Basic Urine Nitrate; Cr = Cardiac Rate",
+          "CBC = Cellular Blood Count; FBS = Full Blood Screening; BUN = Blood Urine Network; Cr = Critical Level",
+          "CBC = Complete Brain Check; FBS = Fasting Body Sugar; BUN = Body Urea Nitrogen; Cr = Brain Culture"
+        ],
+        answer: 0,
+        rationale: "CBC (Complete Blood Count), FBS (Fasting Blood Sugar), BUN (Blood Urea Nitrogen), and Cr (Creatinine) are fundamental blood chemistries."
+      },
+      {
+        id: 49,
+        category: "Diagnostic Procedures",
+        question: "A patient is scheduled for an EGD procedure. What will the doctor do?",
+        options: [
+          "Fix a broken leg bone with surgery.",
+          "Look inside the esophagus, stomach, and small intestine using a small camera scope.",
+          "Perform heart bypass surgery.",
+          "Perform laser eye surgery."
+        ],
+        answer: 1,
+        rationale: "Esophagogastroduodenoscopy (EGD) is an endoscopic visualization of the upper GI tract."
+      },
+      {
+        id: 50,
+        category: "Patient Safety & Error Prevention",
+        question: "Why should nursing staff avoid using unclear abbreviations like U (units) or QD (every day)?",
+        options: [
+          "They take too much time to write.",
+          "They can cause dangerous medicine mistakes.",
+          "Dictionary apps do not support them.",
+          "They stop blood tests from working."
+        ],
+        answer: 1,
+        rationale: "Unapproved, error-prone abbreviations (e.g., 'U' misread as '0') lead directly to catastrophic medication errors."
+      },
+      {
+        id: 51,
+        category: "Therapeutic Communication",
+        question: "A patient says: 'I'm really scared about my surgery tomorrow.' Which response shows good communication and active listening?",
+        options: [
+          "'Don't worry, everything will be fine. Doctors do this all the time.'",
+          "'You shouldn't feel scared; it's an easy operation.'",
+          "'It sounds like you are feeling anxious about tomorrow. Would you like to talk about it?'",
+          "'I am too busy right now to talk about surgery.'"
+        ],
+        answer: 2,
+        rationale: "Active listening acknowledges and validates emotional distress without false reassurance, opening therapeutic dialogue."
+      },
+      {
+        id: 52,
+        category: "Non-Verbal Communication",
+        question: "An assistant notices a patient sitting with crossed arms, looking down at the floor, and answering with only one word. What do these body signs show?",
+        options: [
+          "The patient is completely relaxed.",
+          "The patient may be worried, uncomfortable, or in pain.",
+          "The patient understands all health instructions.",
+          "The patient wants to go home right now."
+        ],
+        answer: 1,
+        rationale: "Closed body posture, averted eye contact, and monosyllabic speech typically signify guardedness, discomfort, anxiety, or pain."
+      },
+      {
+        id: 53,
+        category: "Patient Health Literacy",
+        question: "Why should a nursing assistant use simple words instead of hard medical jargon when talking to patients?",
+        options: [
+          "Simple words save time during physical exams.",
+          "Simple words help patients understand their care and feel less worried.",
+          "Medical words are illegal to say in patient rooms.",
+          "Family members must translate medical words themselves."
+        ],
+        answer: 1,
+        rationale: "Plain, accessible language enhances patient comprehension, compliance with care plans, and alleviates psychological stress."
+      },
+      {
+        id: 54,
+        category: "Oxygen Therapy",
+        question: "A patient with COPD is short of breath and has an oxygen level of 89%. What low-flow oxygen setup is usually ordered?",
+        options: [
+          "High-flow oxygen mask at 10 Liters",
+          "Nasal cannula at 2 Liters",
+          "Operating room breathing machine",
+          "No oxygen at all"
+        ],
+        answer: 1,
+        rationale: "COPD patients with hypercapnic drive are titrated carefully on low-flow oxygen (e.g. 1-2 L/min via nasal cannula) to avoid respiratory depression."
+      },
+      {
+        id: 55,
+        category: "Bedside Manners",
+        question: "A breathless patient speaks very slowly during admission questions. How should the assistant act?",
+        options: [
+          "Tell the patient to hurry up because other patients are waiting.",
+          "Be patient, give the patient time to rest, and do not rush the questions.",
+          "Stop the assessment and send the patient away.",
+          "Tell the patient to stop coughing."
+        ],
+        answer: 1,
+        rationale: "Caregivers must pace questioning to avoid respiratory exhaustion, providing recovery intervals."
+      },
+      {
+        id: 56,
+        category: "Post-Operative Wound Care",
+        question: "How should a patient wash an appendectomy surgery wound at home after being discharged?",
+        options: [
+          "Scrub the wound hard with a brush every day.",
+          "Let warm soapy water run gently over the wound and pat it dry with a clean towel.",
+          "Soak in a hot bath tub for an hour every night.",
+          "Do not let any water touch the body for 6 weeks."
+        ],
+        answer: 1,
+        rationale: "Incision care involves allowing mild soap and water to rinse gently over the site, patting dry with clean cloth, avoiding submersion or scrubbing."
+      },
+      {
+        id: 57,
+        category: "Post-Operative Recovery",
+        question: "What is the usual lifting limit for a patient during the first 2 weeks after an appendectomy surgery?",
+        options: [
+          "Do not lift anything heavier than 10 pounds (about 4.5 kg)",
+          "Do not lift anything heavier than 50 pounds",
+          "No limit; heavy lifting is allowed right away",
+          "Absolute bed rest with no moving allowed"
+        ],
+        answer: 0,
+        rationale: "Lifting restrictions (typically <10 lbs / 4.5 kg) for 2-4 weeks prevent increased intra-abdominal pressure and wound dehiscence or hernia."
+      },
+      {
+        id: 58,
+        category: "Wound Infection Recognition",
+        question: "Which sign indicates that a surgery wound might be infected and needs to be reported to the doctor?",
+        options: [
+          "Mild itching around healing skin after 2 weeks",
+          "Increased redness, swelling, pus drainage, or a fever over 38°C (100.4°F)",
+          "Stitches dissolving as expected",
+          "Feeling hungry for normal food"
+        ],
+        answer: 1,
+        rationale: "Erythema, localized edema, purulent exudate, and pyrexia (>38°C) are cardinal signs of surgical site infection (SSI)."
+      },
+      {
+        id: 59,
+        category: "Clinical Documentation",
+        question: "Where are patient allergies recorded in a chart, and what abbreviation means 'no known allergies'?",
+        options: [
+          "Vital Signs section; V/S",
+          "Allergy section; NKA",
+          "Lab Results section; CBC",
+          "Medication section; PO"
+        ],
+        answer: 1,
+        rationale: "NKA stands for 'No Known Allergies', documented prominently in the Allergy section of patient records."
+      },
+      {
+        id: 60,
+        category: "Nursing Ethics & Documentation",
+        question: "Why is writing clear, prompt nursing notes right after giving care important?",
+        options: [
+          "It allows the hospital to charge higher fees.",
+          "It makes sure all healthcare team members have the same updated information to care for the patient safely.",
+          "It keeps the patient from reading their own record.",
+          "It allows the staff to finish work early."
+        ],
+        answer: 1,
+        rationale: "Timely and accurate medical charting guarantees continuity of care and legal compliance across the multidisciplinary healthcare team."
+      }
+    ];
+
+    // ฟังก์ชันสุ่มลำดับคำถามแบบ Fisher-Yates
+    function shuffleArray(array) {
+      const copy = [...array];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    // กุญแจจัดเก็บ Session Storage
+    const SESSION_KEY = 'BCN_MIDTERM_EXAM_SESSION_V1';
+    const ATTEMPTS_KEY = 'BCN_MIDTERM_EXAM_HISTORY_V1';
+
+    function MidtermExamApp() {
+      const MAX_ATTEMPTS = 1; // ข้อสอบกลางภาค อนุญาต 1 ครั้งมาตรฐาน (หรือปรับได้)
+      const EXAM_DURATION_SECONDS = 3600; // 60 นาที (สำหรับ 60 ข้อ)
+      const MAX_VIOLATIONS = 3; // สลับหน้าจอ/หลุดจอเกิน 3 ครั้ง ปรับตกส่งข้อสอบทันที
+
+      // State สถานะผู้เข้าสอบ
+      const [userName, setUserName] = useState('');
+      const [studentId, setStudentId] = useState('');
+      const [seatNumber, setSeatNumber] = useState('');
+      const [loginError, setLoginError] = useState('');
+      
+      // State การสอบ
+      const [isStarted, setIsStarted] = useState(false);
+      const [shuffledQuestions, setShuffledQuestions] = useState([]);
+      const [currentQuestion, setCurrentQuestion] = useState(0);
+      const [score, setScore] = useState(0);
+      const [showResult, setShowResult] = useState(false);
+      const [showReview, setShowReview] = useState(false);
+      const [timeLeft, setTimeLeft] = useState(EXAM_DURATION_SECONDS);
+      const [answers, setAnswers] = useState([]);
+      const [attemptsRecord, setAttemptsRecord] = useState({});
+
+      // State ระบบรักษาความปลอดภัย & ล็อกหน้าจอ
+      const [isFullscreen, setIsFullscreen] = useState(false);
+      const [violations, setViolations] = useState([]); // บันทึก timestamp และประเภทการหลุด
+      const [showLockWarningModal, setShowLockWarningModal] = useState(false);
+      const [lockWarningReason, setLockWarningReason] = useState('');
+      const [isDisqualified, setIsDisqualified] = useState(false);
+      const [confirmSubmitModal, setConfirmSubmitModal] = useState(false);
+
+      // โหลดประวัติผลสอบเดิมจาก LocalStorage
+      useEffect(() => {
+        try {
+          const savedHistory = localStorage.getItem(ATTEMPTS_KEY);
+          if (savedHistory) {
+            setAttemptsRecord(JSON.parse(savedHistory));
+          }
+        } catch (err) {
+          console.error("Failed to parse attempts history", err);
+        }
+      }, []);
+
+      // ตรวจสอบและกู้คืน Session หากผู้สอบกำลังสอบอยู่แล้วหน้าเว็บรีเฟรช
+      useEffect(() => {
+        try {
+          const activeSession = sessionStorage.getItem(SESSION_KEY);
+          if (activeSession) {
+            const data = JSON.parse(activeSession);
+            if (data.isStarted && !data.showResult) {
+              setUserName(data.userName || '');
+              setStudentId(data.studentId || '');
+              setSeatNumber(data.seatNumber || '');
+              setShuffledQuestions(data.shuffledQuestions || []);
+              setCurrentQuestion(data.currentQuestion || 0);
+              setAnswers(data.answers || []);
+              setTimeLeft(data.timeLeft > 0 ? data.timeLeft : 10);
+              setViolations(data.violations || []);
+              setIsStarted(true);
+
+              // แจ้งเตือนว่ากำลังอยู่ในระบบสอบที่ถูกกู้คืน
+              setLockWarningReason('ระบบตรวจพบว่าหน้าเว็บถูกรีเฟรช คุณต้องกลับเข้าสู่โหมดเต็มจอเพื่อทำข้อสอบต่อทันที');
+              setShowLockWarningModal(true);
+            }
+          }
+        } catch (err) {
+          console.error("Failed to recover session", err);
+        }
+      }, []);
+
+      // บันทึก Session ลงใน sessionStorage ทุกครั้งที่สถานะเปลี่ยน
+      useEffect(() => {
+        if (isStarted && !showResult) {
+          const sessionPayload = {
+            userName,
+            studentId,
+            seatNumber,
+            shuffledQuestions,
+            currentQuestion,
+            answers,
+            timeLeft,
+            violations,
+            isStarted: true,
+            showResult: false
+          };
+          try {
+            sessionStorage.setItem(SESSION_KEY, JSON.stringify(sessionPayload));
+          } catch (e) {
+            console.error("Failed to write to sessionStorage", e);
+          }
+        }
+      }, [isStarted, showResult, userName, studentId, seatNumber, shuffledQuestions, currentQuestion, answers, timeLeft, violations]);
+
+      // ฟังก์ชันเปิด Fullscreen
+      const enterFullscreen = async () => {
+        try {
+          const elem = document.documentElement;
+          if (elem.requestFullscreen) {
+            await elem.requestFullscreen();
+          } else if (elem.webkitRequestFullscreen) {
+            await elem.webkitRequestFullscreen();
+          } else if (elem.msRequestFullscreen) {
+            await elem.msRequestFullscreen();
+          }
+          setIsFullscreen(true);
+          setShowLockWarningModal(false);
+        } catch (err) {
+          console.warn("Fullscreen permission denied or error:", err);
+        }
+      };
+
+      // ฟังก์ชันบันทึกการละเมิดกฎการสอบ
+      const triggerSecurityViolation = useCallback((reason) => {
+        if (!isStarted || showResult || isDisqualified) return;
+
+        const timeString = new Date().toLocaleTimeString('th-TH');
+        const newViolation = { reason, timestamp: timeString };
+
+        setViolations((prev) => {
+          const updated = [...prev, newViolation];
+          if (updated.length >= MAX_VIOLATIONS) {
+            // ละเมิดครบตามที่กำหนด -> ตัดสิทธิ์และส่งข้อสอบทันที
+            setIsDisqualified(true);
+            setTimeout(() => {
+              forceFinishExam(true, updated);
+            }, 600);
+          } else {
+            setLockWarningReason(`ตรวจพบการละเมิด: "${reason}" (ครั้งที่ ${updated.length}/${MAX_VIOLATIONS}) กรุณากดปุ่มด้านล่างเพื่อล็อกหน้าจอกลับสู่โหมดเต็มจอ`);
+            setShowLockWarningModal(true);
+          }
+          return updated;
+        });
+      }, [isStarted, showResult, isDisqualified]);
+
+      // ตรวจจับการออกจาก Fullscreen
+      useEffect(() => {
+        const handleFullscreenChange = () => {
+          const isCurrentlyFull = !!(
+            document.fullscreenElement ||
+            document.webkitFullscreenElement ||
+            document.mozFullScreenElement ||
+            document.msFullscreenElement
+          );
+          setIsFullscreen(isCurrentlyFull);
+          if (isStarted && !showResult && !isCurrentlyFull) {
+            triggerSecurityViolation('ออกจากโหมดเต็มจอ (Exited Fullscreen)');
+          }
+        };
+
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+        document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+        return () => {
+          document.removeEventListener('fullscreenchange', handleFullscreenChange);
+          document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+          document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+          document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+        };
+      }, [isStarted, showResult, triggerSecurityViolation]);
+
+      // ตรวจจับการสลับแท็บ ยุบเบราว์เซอร์ หรือคลิกออกนอกหน้าต่าง (Visibility & Blur)
+      useEffect(() => {
+        if (!isStarted || showResult) return;
+
+        const handleVisibilityChange = () => {
+          if (document.hidden) {
+            triggerSecurityViolation('สลับหน้าต่างหรือแท็บอื่น (Tab Switch / Hidden Window)');
+          }
+        };
+
+        const handleWindowBlur = () => {
+          // หน่วงเวลาเล็กน้อยเพื่อกัน false positive จาก iframe หรือ dialog ภายใน
+          setTimeout(() => {
+            if (document.hidden) {
+              triggerSecurityViolation('คลิกออกนอกหน้าจอสอบ (Window Focus Lost)');
+            }
+          }, 300);
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('blur', handleWindowBlur);
+
+        return () => {
+          document.removeEventListener('visibilitychange', handleVisibilityChange);
+          window.removeEventListener('blur', handleWindowBlur);
+        };
+      }, [isStarted, showResult, triggerSecurityViolation]);
+
+      // บล็อกคีย์ลัดอันตราย (F12, Ctrl+C, Ctrl+V, Ctrl+U, PrintScreen, Alt+Tab) และการคลิกขวา
+      useEffect(() => {
+        if (!isStarted || showResult) return;
+
+        const handleContextMenu = (e) => {
+          e.preventDefault();
+          return false;
+        };
+
+        const handleKeyDown = (e) => {
+          // F12 (DevTools)
+          if (e.key === 'F12' || e.keyCode === 123) {
+            e.preventDefault();
+            triggerSecurityViolation('พยายามเปิด Developer Tools (F12)');
+            return false;
+          }
+
+          // Ctrl+C, Ctrl+V, Ctrl+U, Ctrl+P, Ctrl+S, Ctrl+A
+          if (e.ctrlKey || e.metaKey) {
+            const forbiddenKeys = ['c', 'v', 'u', 's', 'p', 'a', 'x'];
+            if (forbiddenKeys.includes(e.key.toLowerCase())) {
+              e.preventDefault();
+              triggerSecurityViolation(`พยายามใช้คีย์ลัดห้ามใช้ (Ctrl+${e.key.toUpperCase()})`);
+              return false;
+            }
+          }
+
+          // Alt + Tab หรือ Windows Key
+          if (e.altKey && e.key === 'Tab') {
+            e.preventDefault();
+            triggerSecurityViolation('ตรวจพบคีย์ลัดสลับหน้าจอ (Alt+Tab)');
+            return false;
+          }
+        };
+
+        document.addEventListener('contextmenu', handleContextMenu);
+        window.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+          document.removeEventListener('contextmenu', handleContextMenu);
+          window.removeEventListener('keydown', handleKeyDown);
+        };
+      }, [isStarted, showResult, triggerSecurityViolation]);
+
+      useEffect(() => {
+        let timer;
+        if (isStarted && !showResult && timeLeft > 0) {
+          timer = setInterval(() => {
+            setTimeLeft((prev) => prev - 1);
+          }, 1000);
+        } else if (timeLeft === 0 && isStarted && !showResult) {
+          forceFinishExam(false, violations);
+        }
+        return () => clearInterval(timer);
+      }, [isStarted, showResult, timeLeft, violations]);
+
+      const formatTime = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+      };
+
+      // เริ่มต้นทำข้อสอบ
+      const handleStartExam = async (e) => {
+        e.preventDefault();
+        const trimmedId = studentId.trim();
+        const trimmedName = userName.trim();
+
+        if (!trimmedName || !trimmedId) {
+          setLoginError('กรุณากรอกชื่อ-นามสกุล และรหัสประจำตัวนักศึกษาให้ครบถ้วน');
+          return;
+        }
+
+        const userHistory = attemptsRecord[trimmedId] || [];
+        if (userHistory.length >= MAX_ATTEMPTS) {
+          setLoginError(`รหัสประจำตัว ${trimmedId} ได้เข้าทำข้อสอบกลางภาคแล้ว (จำกัด ${MAX_ATTEMPTS} ครั้ง)`);
+          return;
+        }
+
+        setLoginError('');
+        
+        // สุ่มชุดคำถาม 60 ข้อ
+        const randomized = shuffleArray(MIDTERM_QUESTIONS);
+        setShuffledQuestions(randomized);
+        setAnswers(Array(randomized.length).fill(null));
+        setCurrentQuestion(0);
+        setTimeLeft(EXAM_DURATION_SECONDS);
+        setViolations([]);
+        setShowResult(false);
+        setShowReview(false);
+        setIsDisqualified(false);
+        setIsStarted(true);
+
+        // เข้าสู่โหมดเต็มจอทันที
+        await enterFullscreen();
+      };
+
+      const handleAnswerSelect = (optionIdx) => {
+        const newAnswers = [...answers];
+        newAnswers[currentQuestion] = optionIdx;
+        setAnswers(newAnswers);
+      };
+
+      // บันทึกและส่งข้อสอบ
+      const forceFinishExam = (disqualified = false, currentViolations = []) => {
+        let finalScore = 0;
+        answers.forEach((ans, idx) => {
+          if (ans === shuffledQuestions[idx]?.answer) {
+            finalScore++;
+          }
+        });
+
+        // หากถูกตัดสิทธิ์จากการทุจริต ปรับคะแนนเป็น 0 พร้อมทำหมายเหตุ
+        const finalCalculatedScore = disqualified ? 0 : finalScore;
+        setScore(finalCalculatedScore);
+
+        const trimmedId = studentId.trim();
+        const record = {
+          examType: "Midterm Examination (ข้อสอบกลางภาค)",
+          studentName: userName,
+          studentId: trimmedId,
+          seatNumber: seatNumber || "-",
+          score: finalCalculatedScore,
+          rawScore: finalScore,
+          total: shuffledQuestions.length,
+          percentage: ((finalCalculatedScore / shuffledQuestions.length) * 100).toFixed(2),
+          disqualified: disqualified,
+          violationsList: currentViolations,
+          timestamp: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
+          date: new Date().toLocaleDateString('th-TH')
+        };
+
+        const updatedHistory = {
+          ...attemptsRecord,
+          [trimmedId]: [...(attemptsRecord[trimmedId] || []), record]
+        };
+
+        setAttemptsRecord(updatedHistory);
+        try {
+          localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(updatedHistory));
+          sessionStorage.removeItem(SESSION_KEY); // ล้าง session เมื่อสอบเสร็จสิ้น
+        } catch (e) {
+          console.error("Storage error:", e);
+        }
+
+        setShowResult(true);
+        setShowLockWarningModal(false);
+        setConfirmSubmitModal(false);
+
+        // ออกจาก Fullscreen เมื่อเสร็จสิ้น
+        if (document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+      };
+
+      // สั่งพิมพ์หรือ Export PDF
+      const handlePrint = () => {
+        const printElem = document.getElementById('printable-midterm-card');
+        if (!printElem) {
+          window.print();
+          return;
+        }
+
+        const printWin = window.open('', '_blank');
+        if (!printWin) {
+          window.print();
+          return;
+        }
+
+        printWin.document.write(`
+          <!DOCTYPE html>
+          <html lang="th">
+          <head>
+            <meta charset="UTF-8">
+            <title>รายงานผลการสอบกลางภาค - ${userName} (${studentId})</title>
+            <script src="https://cdn.tailwindcss.com"><\/script>
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap');
+              body {
+                font-family: 'Sarabun', sans-serif;
+                background-color: white !important;
+                color: black !important;
+                padding: 30px !important;
+                margin: 0 !important;
+              }
+              * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+            </style>
+          </head>
+          <body class="bg-white">
+            <div class="max-w-4xl mx-auto border-2 border-slate-300 p-8 rounded-2xl">
+              ${printElem.innerHTML}
+            </div>
+            <script>
+              window.onload = function() {
+                setTimeout(() => {
+                  window.focus();
+                  window.print();
+                  window.onafterprint = function() { window.close(); };
+                }, 500);
+              };
+            <\/script>
+          </body>
+          </html>
+        `);
+        printWin.document.close();
+      };
+
+      if (!isStarted) {
+        const currentCheckId = studentId.trim();
+        const pastHistory = currentCheckId ? (attemptsRecord[currentCheckId] || []) : [];
+
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex items-center justify-center p-4">
+            <div className="max-w-lg w-full bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20">
+              
+              {/* Header Badge & Title */}
+              <div className="text-center mb-6">
+                <div className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider mb-3">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  Official Midterm Examination
+                </div>
+                <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">ระบบสอบกลางภาคออนไลน์</h1>
+                <p className="text-slate-600 text-sm mt-1 font-medium">วิทยาลัยพยาบาลบรมราชชนนี สุพรรณบุรี (BCN Suphanburi)</p>
+                <div className="h-1 w-20 bg-indigo-600 mx-auto mt-3 rounded-full"></div>
+              </div>
+
+              {/* Login Form */}
+              <form onSubmit={handleStartExam} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    ชื่อ-นามสกุล นักศึกษา <span className="text-rose-500">*</span>
+                  </label>
+                  <input 
+                    type="text" required
+                    className="block w-full border border-slate-300 rounded-xl px-4 py-3 text-slate-900 shadow-sm focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none transition bg-white"
+                    placeholder="เช่น น.ส. รัตนา วิจิตรศิลป์"
+                    value={userName} onChange={(e) => setUserName(e.target.value)}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                      รหัสประจำตัวนักศึกษา <span className="text-rose-500">*</span>
+                    </label>
+                    <input 
+                      type="text" required
+                      className="block w-full border border-slate-300 rounded-xl px-4 py-3 text-slate-900 shadow-sm focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none transition bg-white"
+                      placeholder="เช่น 6601234567"
+                      value={studentId} onChange={(e) => {
+                        setStudentId(e.target.value);
+                        setLoginError('');
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                      เลขที่นั่งสอบ / เครื่องคอมพิวเตอร์
+                    </label>
+                    <input 
+                      type="text"
+                      className="block w-full border border-slate-300 rounded-xl px-4 py-3 text-slate-900 shadow-sm focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none transition bg-white"
+                      placeholder="เช่น PC-05"
+                      value={seatNumber} onChange={(e) => setSeatNumber(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Exam History Indicator */}
+                {pastHistory.length > 0 && (
+                  <div className="bg-amber-50 border border-amber-300 p-3.5 rounded-xl text-xs space-y-1 text-amber-900">
+                    <p className="font-bold flex items-center gap-1.5">
+                      <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                      สถานะการสอบของรหัสนี้:
+                    </p>
+                    <p>ท่านได้ส่งข้อสอบไปแล้วเมื่อ {pastHistory[0]?.timestamp} ({pastHistory[0]?.date}) คะแนน: <strong>{pastHistory[0]?.score}/{pastHistory[0]?.total}</strong></p>
+                    <p className="text-rose-600 font-bold">⚠️ ข้อสอบกลางภาคไม่อนุญาตให้ทำซ้ำ หากมีข้อขัดข้องกรุณาติดต่ออาจารย์คุมสอบ</p>
+                  </div>
+                )}
+
+                {loginError && (
+                  <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs p-3 rounded-xl flex items-center gap-2">
+                    <svg className="w-4 h-4 text-rose-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>{loginError}</span>
+                  </div>
+                )}
+
+                {/* Security Instructions Warning */}
+                <div className="bg-slate-900 text-slate-200 p-4 rounded-2xl text-xs space-y-2 border border-slate-700 shadow-inner">
+                  <div className="flex items-center gap-2 font-bold text-amber-400 text-sm">
+                    <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                    กฎระเบียบและระบบล็อกหน้าจอป้องกันการทุจริต:
+                  </div>
+                  <ul className="list-disc list-inside space-y-1 text-slate-300">
+                    <li>ข้อสอบมีทั้งหมด <strong>60 ข้อ (เวลา 60 นาที)</strong></li>
+                    <li>เมื่อกดเริ่มสอบ ระบบจะ <strong>บังคับเข้าสู่โหมดเต็มจอ (Fullscreen Lock)</strong> ทันที</li>
+                    <li><strong>ห้ามสลับหน้าจอ ห้ามกด Alt+Tab และห้ามเปิดแท็บอื่น</strong> ระบบจะบันทึกเวลาที่สลับทันที</li>
+                    <li>หากตรวจพบการหลุดหน้าจอหรือสลับแท็บเกิน <strong>{MAX_VIOLATIONS} ครั้ง</strong> ระบบจะ <strong>ตัดสิทธิ์สอบและส่งกระดาษคำตอบทันที</strong></li>
+                    <li>ระบบมีการบันทึก <strong>Session ป้องกันการรีเฟรช</strong> หากเผลอกดปิดหรือโหลดใหม่จะกลับมาทำต่อทันทีโดยเวลาไม่ถูกรีเซ็ต</li>
+                  </ul>
+                </div>
+
+                <button 
+                  type="submit"
+                  disabled={pastHistory.length >= MAX_ATTEMPTS}
+                  className="w-full bg-gradient-to-r from-blue-700 via-indigo-700 to-indigo-800 text-white font-extrabold py-4 px-6 rounded-2xl hover:from-blue-800 hover:to-indigo-900 transition duration-200 shadow-xl shadow-indigo-600/30 transform active:scale-[0.99] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg className="w-5 h-5 text-indigo-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"/></svg>
+                  <span>ยืนยันตัวตนและเข้าสู่การสอบ</span>
+                </button>
+              </form>
+            </div>
+          </div>
+        );
+      }
+
+      if (showResult) {
+        const percentage = ((score / shuffledQuestions.length) * 100).toFixed(2);
+        const isPassed = !isDisqualified && Number(percentage) >= 60;
+
+        return (
+          <div className="min-h-screen bg-slate-900 p-4 md:p-10 print:bg-white print:p-0">
+            <div className="max-w-4xl mx-auto space-y-6">
+              
+              <div className="bg-white border border-slate-200 p-6 md:p-10 rounded-3xl shadow-2xl print:border-0 print:shadow-none print:p-4">
+                <div id="printable-midterm-card" className="space-y-6">
+                  
+                  {/* Top Certificate Header */}
+                  <div className="text-center border-b pb-6 border-slate-200">
+                    <div className="inline-block bg-indigo-50 text-indigo-900 border border-indigo-200 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest mb-2">
+                      วิทยาลัยพยาบาลบรมราชชนนี สุพรรณบุรี • BCN Suphanburi
+                    </div>
+                    <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">
+                      รายงานผลการสอบกลางภาค (Midterm Examination Result)
+                    </h1>
+                    <p className="text-slate-600 text-sm mt-1 font-medium">
+                      หลักสูตรประกาศนียบัตรวิชาชีพผู้ช่วยพยาบาล (Practical Nursing Program)
+                    </p>
+                    <p className="text-slate-500 text-xs mt-0.5">
+                      วิชา: ศัพท์ทางการแพทย์และการปฏิบัติการพยาบาล (Medical Terminology & PN Practice)
+                    </p>
+                  </div>
+
+                  {/* Disqualification / Status Banner */}
+                  {isDisqualified ? (
+                    <div className="bg-rose-50 border-2 border-rose-300 p-4 rounded-2xl text-center space-y-1">
+                      <div className="inline-flex items-center gap-1.5 text-rose-700 font-black text-lg">
+                        <svg className="w-6 h-6 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        ถูกระงับสิทธิ์การสอบเนื่องจากตรวจพบการละเมิดระบบความปลอดภัย
+                      </div>
+                      <p className="text-xs text-rose-600 font-medium">
+                        มีการออกจากหน้าจอหรือสลับแท็บเกินเกณฑ์ที่กำหนด ({MAX_VIOLATIONS} ครั้ง) ระบบปรับผลคะแนนเป็น 0 คะแนนตามระเบียบการสอบกลางภาค
+                      </p>
+                    </div>
+                  ) : (
+                    <div className={`p-4 rounded-2xl text-center font-bold text-sm border ${isPassed ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+                      {isPassed ? '✓ สอบผ่านเกณฑ์มาตรฐานการประเมินความรู้ (ผ่านเกณฑ์ร้อยละ 60 ขึ้นไป)' : '✗ ยังไม่ผ่านเกณฑ์มาตรฐานการประเมินความรู้ (ต่ำกว่าร้อยละ 60)'}
+                    </div>
+                  )}
+
+                  {/* Student Details Grid */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50 p-6 rounded-2xl border border-slate-200 text-xs">
+                    <div>
+                      <p className="font-semibold text-slate-500 uppercase">ชื่อผู้เข้าสอบ</p>
+                      <p className="text-base font-bold text-slate-900 mt-0.5">{userName}</p>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-slate-500 uppercase">รหัสประจำตัว</p>
+                      <p className="text-base font-bold text-slate-900 mt-0.5">{studentId}</p>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-slate-500 uppercase">เลขที่นั่ง/เครื่อง</p>
+                      <p className="text-base font-bold text-slate-900 mt-0.5">{seatNumber || "-"}</p>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-slate-500 uppercase">วันที่สอบ</p>
+                      <p className="text-base font-bold text-slate-900 mt-0.5">{new Date().toLocaleDateString('th-TH')}</p>
+                    </div>
+
+                    <div className="col-span-2 pt-3 border-t border-slate-200">
+                      <p className="font-semibold text-slate-500 uppercase">คะแนนที่ได้ (Score)</p>
+                      <p className="text-2xl font-black text-indigo-700 mt-0.5">
+                        {score} <span className="text-sm font-medium text-slate-500">/ {shuffledQuestions.length} คะแนน</span>
+                      </p>
+                    </div>
+                    <div className="col-span-2 pt-3 border-t border-slate-200">
+                      <p className="font-semibold text-slate-500 uppercase">คิดเป็นร้อยละ (Percentage)</p>
+                      <p className="text-2xl font-black text-indigo-700 mt-0.5">
+                        {percentage}%
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Anti-cheat Audit Log (พิมพ์ลงใบผลสอบด้วยเพื่อความโปร่งใส) */}
+                  <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl text-xs space-y-2">
+                    <div className="flex items-center justify-between font-bold text-slate-700">
+                      <span className="flex items-center gap-1.5">
+                        <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                        บันทึกการตรวจสอบความปลอดภัยระหว่างสอบ (Security Audit Logs):
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${violations.length === 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
+                        {violations.length === 0 ? 'ปลอดภัย 100% ไม่พบการละเมิด' : `พบเหตุการณ์หลุดจอ/สลับหน้าต่าง ${violations.length} ครั้ง`}
+                      </span>
+                    </div>
+                    {violations.length > 0 ? (
+                      <div className="divide-y divide-slate-200 max-h-32 overflow-y-auto">
+                        {violations.map((item, vIdx) => (
+                          <div key={vIdx} className="py-1 flex justify-between text-slate-600">
+                            <span>{vIdx + 1}. {item.reason}</span>
+                            <span className="font-mono text-slate-400">{item.timestamp} น.</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-slate-500 italic">นักศึกษาทำข้อสอบภายใต้สภาพแวดล้อมล็อกหน้าจอสมบูรณ์ตลอดระยะเวลาการสอบ</p>
+                    )}
+                  </div>
+
+                  {/* Signatures */}
+                  <div className="pt-10 border-t border-slate-200">
+                    <div className="grid grid-cols-2 gap-8 text-center text-xs">
+                      <div>
+                        <p className="mb-12 text-slate-400">ลงชื่อ...................................................................</p>
+                        <p className="font-bold text-slate-800 text-sm">{userName}</p>
+                        <p className="text-slate-500 mt-0.5">นักศึกษาผู้เข้ารับการทดสอบ</p>
+                      </div>
+                      <div>
+                        <p className="mb-12 text-slate-400">ลงชื่อ...................................................................</p>
+                        <p className="font-bold text-slate-800 text-sm">( ................................................................... )</p>
+                        <p className="text-slate-500 mt-0.5">อาจารย์ผู้ควบคุมการสอบกลางภาค</p>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Print and Review Buttons */}
+                <div className="flex flex-wrap justify-center gap-3 pt-6 border-t border-slate-100 no-print">
+                  <button 
+                    onClick={handlePrint}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-bold shadow-md hover:shadow-lg transition transform active:scale-95 flex items-center gap-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-3a2 2 0 00-2-2H9a2 2 0 00-2 2v3a2 2 0 002 2zm0 0v-9a2 2 0 012-2h2a2 2 0 012 2v9m-4 0h4"/></svg>
+                    พิมพ์เอกสารรับรองคะแนน / PDF
+                  </button>
+
+                  <button 
+                    onClick={() => setShowReview(!showReview)}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold shadow-md hover:shadow-lg transition transform active:scale-95 flex items-center gap-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span>{showReview ? 'ซ่อนเฉลยคำตอบ' : 'ตรวจทานคำตอบและคำอธิบาย (60 ข้อ)'}</span>
+                  </button>
+
+                  <button 
+                    onClick={() => {
+                      sessionStorage.removeItem(SESSION_KEY);
+                      setIsStarted(false);
+                      setShowResult(false);
+                      setShowReview(false);
+                    }}
+                    className="bg-slate-200 hover:bg-slate-300 text-slate-800 px-6 py-3 rounded-xl font-bold transition flex items-center gap-2"
+                  >
+                    ออกจากระบบสอบ
+                  </button>
+                </div>
+              </div>
+
+              {/* Comprehensive Answer Review List */}
+              {showReview && (
+                <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-sm space-y-4 no-print">
+                  <h3 className="text-xl font-bold text-slate-900 border-b pb-3 flex items-center gap-2">
+                    <span className="bg-indigo-100 text-indigo-700 w-8 h-8 rounded-full flex items-center justify-center text-sm font-extrabold">✓</span>
+                    เฉลยคำตอบและคำอธิบายวิชาการรายข้อ (Midterm 60 ข้อ)
+                  </h3>
+
+                  <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+                    {shuffledQuestions.map((item, idx) => {
+                      const userAns = answers[idx];
+                      const isCorrect = userAns === item.answer;
+
+                      return (
+                        <div key={idx} className={`p-4 rounded-2xl border ${isCorrect ? 'border-emerald-200 bg-emerald-50/40' : 'border-rose-200 bg-rose-50/40'}`}>
+                          <div className="flex items-start justify-between gap-3">
+                            <span className="font-bold text-slate-800 text-sm">
+                              ข้อที่ {idx + 1}. {item.question}
+                            </span>
+                            <span className={`text-xs px-2.5 py-1 rounded-full font-bold flex-shrink-0 ${isCorrect ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'}`}>
+                              {isCorrect ? 'ถูกต้อง' : 'ตอบผิด'}
+                            </span>
+                          </div>
+
+                          <div className="mt-3 space-y-1.5 text-xs">
+                            <p className="text-slate-700">
+                              <span className="font-semibold">คำตอบของคุณ:</span> {userAns !== null ? `${String.fromCharCode(65 + userAns)}) ${item.options[userAns]}` : '(ไม่ได้ตอบ)'}
+                            </p>
+                            {!isCorrect && (
+                              <p className="text-emerald-700 font-semibold">
+                                <span className="font-bold">คำตอบที่ถูกต้อง:</span> {String.fromCharCode(65 + item.answer)}) {item.options[item.answer]}
+                              </p>
+                            )}
+                            <p className="text-slate-600 bg-white/90 p-2.5 rounded-xl border border-slate-200/80 mt-1">
+                              💡 <strong>เหตุผลทางวิชาการ (Rationale):</strong> {item.rationale}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </div>
+        );
+      }
+
+      const q = shuffledQuestions[currentQuestion];
+      if (!q) return null;
+
+      const answeredCount = answers.filter(a => a !== null).length;
+
+      return (
+        <div className="min-h-screen bg-slate-950 flex flex-col justify-between select-none">
+          
+          {/* Top Security & Status Bar */}
+          <header className="bg-slate-900 border-b border-slate-800 px-4 md:px-8 py-3 text-white sticky top-0 z-40 shadow-lg">
+            <div className="max-w-6xl mx-auto flex flex-wrap justify-between items-center gap-3">
+              
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5 bg-rose-500/20 text-rose-400 border border-rose-500/30 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+                  Exam Lock Active
+                </div>
+                <div>
+                  <span className="text-xs text-slate-300 font-semibold">ผู้สอบ: </span>
+                  <span className="text-xs font-bold text-white">{userName}</span>
+                  <span className="text-xs text-slate-400 ml-1">({studentId})</span>
+                </div>
+              </div>
+
+              {/* Violations Strike Meter */}
+              <div className="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700 text-xs">
+                <span className="text-slate-400">การแจ้งเตือนสลับจอ:</span>
+                <span className={`font-mono-tech font-bold px-2 py-0.5 rounded-lg ${violations.length === 0 ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-rose-950 text-rose-400 border border-rose-800 animate-pulse'}`}>
+                  {violations.length} / {MAX_VIOLATIONS}
+                </span>
+              </div>
+
+              {/* Countdown Clock */}
+              <div className="flex items-center gap-2 bg-indigo-950/70 border border-indigo-700/50 px-4 py-1.5 rounded-xl">
+                <svg className="w-5 h-5 text-indigo-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div className="text-right">
+                  <span className="text-[10px] uppercase font-bold text-indigo-300 tracking-wider block leading-none">เวลาคงเหลือ</span>
+                  <span className={`font-mono-tech text-lg font-black leading-tight ${timeLeft < 300 ? 'text-rose-400 animate-bounce' : 'text-white'}`}>
+                    {formatTime(timeLeft)}
+                  </span>
+                </div>
+              </div>
+
+            </div>
+          </header>
+
+          {/* Exam Container */}
+          <main className="flex-1 max-w-5xl w-full mx-auto p-4 md:p-6 flex flex-col justify-center">
+            
+            {/* Progress Bar & Quick Stats */}
+            <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl mb-4 text-xs text-slate-300 flex flex-wrap justify-between items-center gap-2">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-white text-sm">ข้อที่ {currentQuestion + 1} / {shuffledQuestions.length}</span>
+                <span className="text-slate-500">•</span>
+                <span className="text-indigo-400 font-medium">ตอบแล้ว {answeredCount} ข้อ (เหลือ {shuffledQuestions.length - answeredCount} ข้อ)</span>
+              </div>
+
+              {q.category && (
+                <span className="bg-slate-800 text-slate-300 px-3 py-1 rounded-lg font-medium border border-slate-700">
+                  หมวด: {q.category}
+                </span>
+              )}
+            </div>
+
+            {/* Question Card */}
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
+              
+              {/* Question Text */}
+              <h2 className="text-base md:text-xl font-bold text-white leading-relaxed mb-6">
+                {q.question}
+              </h2>
+
+              {/* Options */}
+              <div className="space-y-3">
+                {q.options.map((optText, optIdx) => {
+                  const isSelected = answers[currentQuestion] === optIdx;
+                  return (
+                    <button
+                      key={optIdx}
+                      onClick={() => handleAnswerSelect(optIdx)}
+                      className={`w-full text-left p-4 rounded-2xl border-2 transition duration-150 flex items-center gap-4 ${
+                        isSelected 
+                          ? 'border-indigo-500 bg-indigo-950/70 text-white shadow-lg ring-2 ring-indigo-500/40' 
+                          : 'border-slate-800 bg-slate-850 hover:bg-slate-800 text-slate-300'
+                      }`}
+                    >
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm flex-shrink-0 border ${
+                        isSelected 
+                          ? 'bg-indigo-600 border-indigo-400 text-white' 
+                          : 'bg-slate-800 border-slate-700 text-slate-400'
+                      }`}>
+                        {String.fromCharCode(65 + optIdx)}
+                      </div>
+                      <span className="text-sm md:text-base font-medium leading-normal">{optText}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Navigation Controls */}
+              <div className="mt-8 pt-6 border-t border-slate-800 flex justify-between items-center gap-3">
+                <button
+                  disabled={currentQuestion === 0}
+                  onClick={() => setCurrentQuestion(currentQuestion - 1)}
+                  className="px-5 py-2.5 rounded-xl border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-800 transition disabled:opacity-30 disabled:cursor-not-allowed font-bold text-sm flex items-center gap-1.5"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"/></svg>
+                  ย้อนกลับ
+                </button>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setConfirmSubmitModal(true)}
+                    className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold text-xs border border-amber-500/30 transition flex items-center gap-1"
+                  >
+                    ส่งข้อสอบ
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      if (currentQuestion < shuffledQuestions.length - 1) {
+                        setCurrentQuestion(currentQuestion + 1);
+                      } else {
+                        setConfirmSubmitModal(true);
+                      }
+                    }}
+                    className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition flex items-center gap-1.5"
+                  >
+                    <span>{currentQuestion === shuffledQuestions.length - 1 ? 'ตรวจทาน / ส่งข้อสอบ' : 'ข้อถัดไป'}</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"/></svg>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Quick Question Navigation Matrix */}
+            <div className="mt-4 bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+              <p className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">กระดานข้อสอบ (กดข้ามไปยังข้อที่ต้องการ):</p>
+              <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
+                {shuffledQuestions.map((_, idx) => {
+                  const isAnswered = answers[idx] !== null;
+                  const isCurrent = currentQuestion === idx;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => setCurrentQuestion(idx)}
+                      className={`w-7 h-7 rounded-lg text-xs font-bold transition flex items-center justify-center ${
+                        isCurrent 
+                          ? 'ring-2 ring-indigo-400 bg-indigo-600 text-white' 
+                          : isAnswered 
+                            ? 'bg-emerald-950 text-emerald-300 border border-emerald-700' 
+                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                      }`}
+                    >
+                      {idx + 1}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+          </main>
+
+          {}
+          {showLockWarningModal && (
+            <div className="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4 select-none">
+              <div className="max-w-md w-full bg-slate-900 border-2 border-rose-500 rounded-3xl p-6 md:p-8 text-center shadow-2xl text-white">
+                
+                <div className="w-16 h-16 bg-rose-500/20 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-rose-500/40 animate-bounce">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                </div>
+
+                <h3 className="text-xl font-black text-rose-400">ตรวจพบการสลับหน้าจอ / หลุดโหมดล็อก</h3>
+                <p className="text-slate-300 text-xs mt-3 leading-relaxed">
+                  {lockWarningReason || 'ระบบตรวจพบว่าท่านออกจากหน้าจอสอบหรือเปลี่ยนแท็บ'}
+                </p>
+
+                <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 my-4 text-xs">
+                  <p className="text-slate-400">จำนวนครั้งที่ตรวจพบ:</p>
+                  <p className="text-2xl font-mono-tech font-bold text-rose-400 mt-1">
+                    {violations.length} / {MAX_VIOLATIONS} ครั้ง
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    {violations.length >= MAX_VIOLATIONS - 1 
+                      ? '⚠️ เตือนครั้งสุดท้าย! หากหลุดอีก 1 ครั้ง ระบบจะตัดสิทธิ์สอบทันที' 
+                      : 'หากละเมิดครบ 3 ครั้ง ระบบจะส่งข้อสอบและปรับตกอัตโนมัติ'}
+                  </p>
+                </div>
+
+                <button
+                  onClick={enterFullscreen}
+                  className="w-full bg-rose-600 hover:bg-rose-700 text-white font-extrabold py-3.5 px-4 rounded-xl shadow-lg shadow-rose-600/30 transition transform active:scale-95"
+                >
+                  ล็อกหน้าจอกลับสู่โหมดเต็มจอเพื่อทำข้อสอบต่อ
+                </button>
+
+              </div>
+            </div>
+          )}
+
+          {}
+          {confirmSubmitModal && (
+            <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="max-w-sm w-full bg-slate-900 border border-slate-700 rounded-3xl p-6 text-white text-center shadow-2xl">
+                <div className="w-12 h-12 bg-indigo-500/20 text-indigo-400 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <h4 className="text-lg font-bold">ยืนยันการส่งข้อสอบกลางภาค</h4>
+                <p className="text-xs text-slate-300 mt-2">
+                  คุณได้ทำข้อสอบไปแล้ว <strong>{answeredCount} / {shuffledQuestions.length} ข้อ</strong>
+                  {answeredCount < shuffledQuestions.length && (
+                    <span className="block text-amber-400 font-semibold mt-1">
+                      ⚠️ ยังมีข้อที่ยังไม่ได้ตอบอีก {shuffledQuestions.length - answeredCount} ข้อ!
+                    </span>
+                  )}
+                </p>
+
+                <div className="grid grid-cols-2 gap-3 mt-6">
+                  <button
+                    onClick={() => setConfirmSubmitModal(false)}
+                    className="py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition"
+                  >
+                    กลับไปทำต่อ
+                  </button>
+                  <button
+                    onClick={() => forceFinishExam(false, violations)}
+                    className="py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition shadow-md"
+                  >
+                    ยืนยันส่งข้อสอบ
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    const container = document.getElementById('root');
+    const root = ReactDOM.createRoot(container);
+    root.render(<MidtermExamApp />);
+  </script>
+</body>
+</html>
