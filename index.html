@@ -77,7 +77,7 @@
   <script type="text/babel">
     const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
-    // คลังข้อสอบกลางภาค 60 ข้อ ฉบับสมบูรณ์ (Midterm Examination for PN Students)
+    // คลังข้อสอบกลางภาค 60 ข้อ ฉบับปลอดภัย (ลบคำตอบและเฉลยออกจากโครงสร้างข้อมูล ป้องกันการ View Source)
     const MIDTERM_QUESTIONS = [
       {
         id: 1,
@@ -88,9 +88,7 @@
           "They give a list of medical tool companies.",
           "They show the history of heart surgery.",
           "They translate common English words into other languages."
-        ],
-        answer: 0,
-        rationale: "Audio files with IPA guide students on correct pronunciation to prevent clinical errors with similar-sounding medical terms."
+        ]
       },
       {
         id: 2,
@@ -101,9 +99,7 @@
           "Short 'ae' sound (สระแอ)",
           "Long 'aw' sound",
           "Short 'eh' sound"
-        ],
-        answer: 1,
-        rationale: "The IPA symbol /æ/ represents the short 'ae' vowel sound found in abdomen or cat."
+        ]
       },
       {
         id: 3,
@@ -114,9 +110,7 @@
           "A medical thesaurus",
           "A medical encyclopedia such as MedlinePlus or MSD Manuals",
           "An English grammar handbook"
-        ],
-        answer: 2,
-        rationale: "Medical encyclopedias (MedlinePlus, MSD Manuals) give full factual details on diseases, treatments, and care steps."
+        ]
       },
       {
         id: 4,
@@ -127,9 +121,7 @@
           "Peri- (around) + cardi (heart) + -itis (inflammation) = Inflammation of the tissue around the heart",
           "Peri- (above) + cardi (heart) + -itis (pain) = Severe pain above the heart",
           "Peri- (under) + cardi (heart) + -itis (cut) = A surgical cut under the heart"
-        ],
-        answer: 1,
-        rationale: "Peri- (around) + cardi (heart) + -itis (inflammation) means inflammation of the pericardium tissue around the heart."
+        ]
       },
       {
         id: 5,
@@ -140,9 +132,7 @@
           "Brady- and Tachy-",
           "Dys- and Mal-",
           "Endo- and Intra-"
-        ],
-        answer: 1,
-        rationale: "Brady- means slow (ช้า) and Tachy- means fast (เร็ว), making them opposite prefixes."
+        ]
       },
       {
         id: 6,
@@ -153,9 +143,7 @@
           "Inflammation of the stomach",
           "Tumor in the large intestine",
           "Severe kidney pain"
-        ],
-        answer: 1,
-        rationale: "The root gastr/o means stomach and -itis means inflammation, so Gastritis is stomach inflammation (กระเพาะอาหารอักเสบ)."
+        ]
       },
       {
         id: 7,
@@ -166,9 +154,7 @@
           "Surgical removal of a body part",
           "Making a new opening",
           "Cutting into an organ"
-        ],
-        answer: 1,
-        rationale: "The suffix -ectomy means surgical excision/removal of a tissue or organ (การผ่าตัดเอาออก)."
+        ]
       },
       {
         id: 8,
@@ -179,9 +165,7 @@
           "The nursing assistant checked the patient's vital signs.",
           "The patient had pain yesterday and now says it went away.",
           "A high temperature was found at 10 AM."
-        ],
-        answer: 1,
-        rationale: "Clear, direct Subject + Active Verb + Object sentences ('The nursing assistant checked...') are standard in clinical charting."
+        ]
       },
       {
         id: 9,
@@ -192,9 +176,7 @@
           "Onset",
           "Duration",
           "Severity"
-        ],
-        answer: 1,
-        rationale: "Asking when a symptom started assesses the 'Onset' (จุดเริ่มต้น/เวลาที่เริ่มมีอาการ) in OLD CARTS."
+        ]
       },
       {
         id: 10,
@@ -205,9 +187,7 @@
           "Ask what makes the pain better or worse.",
           "Ask the patient to rate the pain on a scale from 0 to 10.",
           "Ask if the pain feels sharp or dull."
-        ],
-        answer: 2,
-        rationale: "Severity is assessed using a standard numeric pain score rating (0 to 10 scale)."
+        ]
       },
       {
         id: 11,
@@ -218,9 +198,7 @@
           "Scanning",
           "Intensive Reading",
           "Critical Reading"
-        ],
-        answer: 1,
-        rationale: "Scanning is searching rapidly through text to locate a specific keyword or data point (such as 14:00 or a temperature)."
+        ]
       },
       {
         id: 12,
@@ -231,9 +209,7 @@
           "Skimming",
           "Proofreading",
           "Phonetic analysis"
-        ],
-        answer: 1,
-        rationale: "Skimming involves quickly reading headers and overview sentences to grasp the general idea/gist."
+        ]
       },
       {
         id: 13,
@@ -244,9 +220,7 @@
           "Take the medicine on an empty stomach.",
           "Take 1 capsule 3 times a day with food and finish all 10 days.",
           "Take 3 capsules once a day at bedtime."
-        ],
-        answer: 2,
-        rationale: "Patients must complete the full antibiotic course (all 10 days) with food as directed to prevent antibiotic resistance."
+        ]
       },
       {
         id: 14,
@@ -257,9 +231,7 @@
           "6 tablets",
           "8 tablets",
           "10 tablets"
-        ],
-        answer: 2,
-        rationale: "The maximum safe daily dose stated is 8 tablets (4,000 mg) in 24 hours to prevent hepatotoxicity."
+        ]
       },
       {
         id: 15,
@@ -270,9 +242,7 @@
           "Wet Floor",
           "Isolation Area",
           "No Smoking"
-        ],
-        answer: 1,
-        rationale: "A yellow cautionary sign showing a slipping person indicates a slippery 'Wet Floor' fall hazard."
+        ]
       },
       {
         id: 16,
@@ -283,9 +253,7 @@
           "On a scale of 1 to 10, how bad is the pain?",
           "Did you bring your own medicine from home?",
           "Why didn't you take Paracetamol earlier?"
-        ],
-        answer: 1,
-        rationale: "Using the 1-10 numeric pain rating scale is the standard, objective method to quantify pain severity."
+        ]
       },
       {
         id: 17,
@@ -296,9 +264,7 @@
           "Greet the patient, state your name and role, check the ID wristband, explain what you will do, and leave the call light nearby.",
           "Give the patient medicine, ask if they feel better, and inform the doctor.",
           "Look at the room number, do the care, and leave quietly without talking."
-        ],
-        answer: 1,
-        rationale: "Professional nursing protocol: Greet, identify self, verify two patient identifiers (ID band), explain care, and ensure safety (call bell within reach)."
+        ]
       },
       {
         id: 18,
@@ -309,9 +275,7 @@
           "Emergency Room (ER)",
           "Outpatient Department (OPD)",
           "Inpatient Department (IPD)"
-        ],
-        answer: 1,
-        rationale: "The Emergency Room (ER) is designated for immediate trauma resuscitation and initial life-saving interventions."
+        ]
       },
       {
         id: 19,
@@ -322,9 +286,7 @@
           "General Ward",
           "Intensive Care Unit (ICU)",
           "Physical Therapy Department"
-        ],
-        answer: 2,
-        rationale: "The Intensive Care Unit (ICU) is equipped for continuous hemodynamic monitoring and mechanical ventilatory support."
+        ]
       },
       {
         id: 20,
@@ -335,9 +297,7 @@
           "Patient A is an Outpatient (OPD); Patient B is an Inpatient (IPD).",
           "Patient A is an Inpatient (IPD); Patient B is an Outpatient (OPD).",
           "Both are Emergency Room (ER) patients."
-        ],
-        answer: 1,
-        rationale: "Same-day clinic patients are Outpatients (OPD); admitted overnight patients are Inpatients (IPD)."
+        ]
       },
       {
         id: 21,
@@ -348,9 +308,7 @@
           "Pharmacy",
           "Radiology Department",
           "Physical Therapy Department"
-        ],
-        answer: 3,
-        rationale: "Physical Therapy provides gait training, mobility rehabilitation, and muscle strengthening."
+        ]
       },
       {
         id: 22,
@@ -361,9 +319,7 @@
           "Stethoscope",
           "Blood Pressure Cuff",
           "Syringe"
-        ],
-        answer: 1,
-        rationale: "A stethoscope is used for auscultation of heart, breath, and abdominal bowel sounds."
+        ]
       },
       {
         id: 23,
@@ -374,9 +330,7 @@
           "IV Pole",
           "Bedpan",
           "Wheelchair"
-        ],
-        answer: 2,
-        rationale: "A bedpan is used for urination and bowel movements for bedridden, non-ambulatory patients."
+        ]
       },
       {
         id: 24,
@@ -387,9 +341,7 @@
           "Malaise",
           "Cachexia",
           "Pruritus"
-        ],
-        answer: 1,
-        rationale: "Malaise refers to a generalized feeling of bodily discomfort, weakness, or lethargy."
+        ]
       },
       {
         id: 25,
@@ -400,9 +352,7 @@
           "Malaise",
           "Cachexia",
           "Edema"
-        ],
-        answer: 2,
-        rationale: "Cachexia is profound wasting, severe weight loss, and muscle atrophy resulting from severe chronic disease."
+        ]
       },
       {
         id: 26,
@@ -413,9 +363,7 @@
           "Diaphoresis",
           "Pyrexia",
           "Cyanosis"
-        ],
-        answer: 1,
-        rationale: "Diaphoresis refers to profuse, excessive sweating, often accompanied by cold, clammy skin."
+        ]
       },
       {
         id: 27,
@@ -426,9 +374,7 @@
           "Presyncope",
           "Vertigo",
           "Paresthesia"
-        ],
-        answer: 2,
-        rationale: "Vertigo is an illusion of motion where the patient perceives that they or their surroundings are spinning."
+        ]
       },
       {
         id: 28,
@@ -439,9 +385,7 @@
           "Dysphagia and Dysphasia",
           "Dysphagia and Paresthesia",
           "Vertigo and Tinnitus"
-        ],
-        answer: 1,
-        rationale: "Dysphagia (-phagia = swallow) is difficulty swallowing; Dysphasia (-phasia = speech) is difficulty with speech."
+        ]
       },
       {
         id: 29,
@@ -452,9 +396,7 @@
           "Raise the head of the bed up.",
           "Stop giving water without a doctor's order.",
           "Lay the patient completely flat on their back."
-        ],
-        answer: 1,
-        rationale: "Elevating the head of the bed (Fowler's position) reduces venous return to the heart and allows better lung expansion."
+        ]
       },
       {
         id: 30,
@@ -465,9 +407,7 @@
           "Hematemesis",
           "Hemoptysis",
           "Hematochezia"
-        ],
-        answer: 1,
-        rationale: "Hematemesis is vomiting of blood or altered coffee-ground material indicating upper gastrointestinal bleeding."
+        ]
       },
       {
         id: 31,
@@ -478,9 +418,7 @@
           "Jaundice and Ascites",
           "Jaundice and Edema",
           "Cyanosis and Dyspepsia"
-        ],
-        answer: 1,
-        rationale: "Jaundice (icterus) is yellow discoloration of tissues; Ascites is abnormal accumulation of fluid in the peritoneal cavity."
+        ]
       },
       {
         id: 32,
@@ -491,9 +429,7 @@
           "Tinnitus and Pruritus",
           "Tinnitus and Erythema",
           "Diplopia and Pruritus"
-        ],
-        answer: 1,
-        rationale: "Tinnitus is ringing/buzzing perception in the ear; Pruritus is the clinical term for itching."
+        ]
       },
       {
         id: 33,
@@ -504,9 +440,7 @@
           "Edema",
           "Urticaria",
           "Cachexia"
-        ],
-        answer: 2,
-        rationale: "Urticaria (hives/wheals) are raised, pruritic erythematous skin lesions resulting from histamine release."
+        ]
       },
       {
         id: 34,
@@ -517,9 +451,7 @@
           "Low oxygen levels in the tissues",
           "High blood sugar",
           "Stomach bleeding"
-        ],
-        answer: 1,
-        rationale: "Cyanosis is a bluish discoloration of the skin and mucous membranes indicating hypoxemia (low oxygenation)."
+        ]
       },
       {
         id: 35,
@@ -530,9 +462,7 @@
           "Arthritis and Arthralgia",
           "Myalgia and Arthritis",
           "Myalgia and Paresthesia"
-        ],
-        answer: 0,
-        rationale: "Arthralgia (arthr/o = joint, -algia = pain) means joint pain; Myalgia (my/o = muscle) means muscle pain."
+        ]
       },
       {
         id: 36,
@@ -543,9 +473,7 @@
           "The middle part of urine has the highest level of medicine.",
           "The last part of urine breaks blood cells.",
           "The lab rejects urine collected in the morning."
-        ],
-        answer: 0,
-        rationale: "Discarding the initial void flushes normal skin and urethral flora, preventing contamination of the specimen."
+        ]
       },
       {
         id: 37,
@@ -556,9 +484,7 @@
           "Collect all urine passed over a full 24-hour period in a special container.",
           "Collect one sample after fasting for 12 hours.",
           "Collect a stool sample along with every urine sample."
-        ],
-        answer: 1,
-        rationale: "A 24-hour urine test requires collecting all urine produced over an exact 24-hour timeframe in a preservative container."
+        ]
       },
       {
         id: 38,
@@ -569,9 +495,7 @@
           "'We need sputum (phlegm) coughed up from deep in your lungs, not saliva from your mouth.'",
           "'This is fine if we add water to it.'",
           "'Saliva is acceptable only if collected at night.'"
-        ],
-        answer: 1,
-        rationale: "Lower respiratory testing requires deep bronchial sputum/phlegm, as saliva cannot identify pulmonary pathogens."
+        ]
       },
       {
         id: 39,
@@ -582,9 +506,7 @@
           "Tourniquet",
           "Bandage",
           "Gauze"
-        ],
-        answer: 1,
-        rationale: "A tourniquet temporarily restricts venous return to distend veins for easier venipuncture."
+        ]
       },
       {
         id: 40,
@@ -595,9 +517,7 @@
           "Gently turn the tube upside down 8 to 10 times to mix the blood with the anti-clotting chemical.",
           "Keep the tube still so the blood clots quickly.",
           "Place the tube under a bright lamp."
-        ],
-        answer: 1,
-        rationale: "Gentle inversion 8-10 times mixes blood with the anticoagulant EDTA without causing mechanical hemolysis."
+        ]
       },
       {
         id: 41,
@@ -608,9 +528,7 @@
           "To keep the patient from sweating.",
           "To stop blood cells from breaking inside the tube.",
           "To help the blood tube fill faster."
-        ],
-        answer: 0,
-        rationale: "Aseptic skin disinfection prevents skin commensals from entering blood culture bottles, avoiding false-positive diagnoses."
+        ]
       },
       {
         id: 42,
@@ -621,9 +539,7 @@
           "Open cups can leak and get contaminated with outside germs.",
           "Stool samples must always be mixed with liquid.",
           "Open cups cause bad urine test results."
-        ],
-        answer: 1,
-        rationale: "Loose specimen containers pose biohazard leaks, evaporation, and external contamination, violating specimen integrity criteria."
+        ]
       },
       {
         id: 43,
@@ -634,9 +550,7 @@
           "Chief Complaint",
           "Complete Blood Count",
           "Chronic Condition"
-        ],
-        answer: 1,
-        rationale: "In medical records, CC stands for Chief Complaint (อาการสำคัญที่นำผู้ป่วยมาโรงพยาบาล)."
+        ]
       },
       {
         id: 44,
@@ -647,9 +561,7 @@
           "Past Medical History / Underlying Disease",
           "Patient Medical Health / Urgent Treatment",
           "Primary Medical History / Unit Department"
-        ],
-        answer: 1,
-        rationale: "PMH = Past Medical History (ประวัติการเจ็บป่วยในอดีต); U/D = Underlying Disease (โรคประจำตัว)."
+        ]
       },
       {
         id: 45,
@@ -660,9 +572,7 @@
           "Blood Pressure, Heart Rate/Pulse Rate, Respiratory Rate, Temperature",
           "Blood Sugar, Weight, Height, BMI",
           "Water Intake, Water Output, Pain Score, Consciousness"
-        ],
-        answer: 1,
-        rationale: "Vital signs (V/S) include BP, HR/Pulse, RR, and Temperature (สัญญานชีพพื้นฐาน 4 อย่าง)."
+        ]
       },
       {
         id: 46,
@@ -673,9 +583,7 @@
           "By vein injection, 3 times a day",
           "By muscle injection, 4 times a day",
           "Under the skin, once a day at bedtime"
-        ],
-        answer: 0,
-        rationale: "PO (Per Os) = by mouth (รับประทานทางปาก); BID (Bis In Die) = twice a day (วันละ 2 ครั้ง)."
+        ]
       },
       {
         id: 47,
@@ -686,9 +594,7 @@
           "Fx",
           "Dx",
           "Rx"
-        ],
-        answer: 1,
-        rationale: "Fx stands for Fracture (กระดูกหัก); Tx = Treatment, Dx = Diagnosis, Rx = Prescription."
+        ]
       },
       {
         id: 48,
@@ -699,9 +605,7 @@
           "CBC = Cardiac Blood Culture; FBS = Fluid Blood Specimen; BUN = Basic Urine Nitrate; Cr = Cardiac Rate",
           "CBC = Cellular Blood Count; FBS = Full Blood Screening; BUN = Blood Urine Network; Cr = Critical Level",
           "CBC = Complete Brain Check; FBS = Fasting Body Sugar; BUN = Body Urea Nitrogen; Cr = Brain Culture"
-        ],
-        answer: 0,
-        rationale: "CBC (Complete Blood Count), FBS (Fasting Blood Sugar), BUN (Blood Urea Nitrogen), and Cr (Creatinine) are fundamental blood chemistries."
+        ]
       },
       {
         id: 49,
@@ -712,9 +616,7 @@
           "Look inside the esophagus, stomach, and small intestine using a small camera scope.",
           "Perform heart bypass surgery.",
           "Perform laser eye surgery."
-        ],
-        answer: 1,
-        rationale: "Esophagogastroduodenoscopy (EGD) is an endoscopic visualization of the upper GI tract."
+        ]
       },
       {
         id: 50,
@@ -725,9 +627,7 @@
           "They can cause dangerous medicine mistakes.",
           "Dictionary apps do not support them.",
           "They stop blood tests from working."
-        ],
-        answer: 1,
-        rationale: "Unapproved, error-prone abbreviations (e.g., 'U' misread as '0') lead directly to catastrophic medication errors."
+        ]
       },
       {
         id: 51,
@@ -738,9 +638,7 @@
           "'You shouldn't feel scared; it's an easy operation.'",
           "'It sounds like you are feeling anxious about tomorrow. Would you like to talk about it?'",
           "'I am too busy right now to talk about surgery.'"
-        ],
-        answer: 2,
-        rationale: "Active listening acknowledges and validates emotional distress without false reassurance, opening therapeutic dialogue."
+        ]
       },
       {
         id: 52,
@@ -751,9 +649,7 @@
           "The patient may be worried, uncomfortable, or in pain.",
           "The patient understands all health instructions.",
           "The patient wants to go home right now."
-        ],
-        answer: 1,
-        rationale: "Closed body posture, averted eye contact, and monosyllabic speech typically signify guardedness, discomfort, anxiety, or pain."
+        ]
       },
       {
         id: 53,
@@ -764,9 +660,7 @@
           "Simple words help patients understand their care and feel less worried.",
           "Medical words are illegal to say in patient rooms.",
           "Family members must translate medical words themselves."
-        ],
-        answer: 1,
-        rationale: "Plain, accessible language enhances patient comprehension, compliance with care plans, and alleviates psychological stress."
+        ]
       },
       {
         id: 54,
@@ -777,9 +671,7 @@
           "Nasal cannula at 2 Liters",
           "Operating room breathing machine",
           "No oxygen at all"
-        ],
-        answer: 1,
-        rationale: "COPD patients with hypercapnic drive are titrated carefully on low-flow oxygen (e.g. 1-2 L/min via nasal cannula) to avoid respiratory depression."
+        ]
       },
       {
         id: 55,
@@ -790,9 +682,7 @@
           "Be patient, give the patient time to rest, and do not rush the questions.",
           "Stop the assessment and send the patient away.",
           "Tell the patient to stop coughing."
-        ],
-        answer: 1,
-        rationale: "Caregivers must pace questioning to avoid respiratory exhaustion, providing recovery intervals."
+        ]
       },
       {
         id: 56,
@@ -803,9 +693,7 @@
           "Let warm soapy water run gently over the wound and pat it dry with a clean towel.",
           "Soak in a hot bath tub for an hour every night.",
           "Do not let any water touch the body for 6 weeks."
-        ],
-        answer: 1,
-        rationale: "Incision care involves allowing mild soap and water to rinse gently over the site, patting dry with clean cloth, avoiding submersion or scrubbing."
+        ]
       },
       {
         id: 57,
@@ -816,9 +704,7 @@
           "Do not lift anything heavier than 50 pounds",
           "No limit; heavy lifting is allowed right away",
           "Absolute bed rest with no moving allowed"
-        ],
-        answer: 0,
-        rationale: "Lifting restrictions (typically <10 lbs / 4.5 kg) for 2-4 weeks prevent increased intra-abdominal pressure and wound dehiscence or hernia."
+        ]
       },
       {
         id: 58,
@@ -829,9 +715,7 @@
           "Increased redness, swelling, pus drainage, or a fever over 38°C (100.4°F)",
           "Stitches dissolving as expected",
           "Feeling hungry for normal food"
-        ],
-        answer: 1,
-        rationale: "Erythema, localized edema, purulent exudate, and pyrexia (>38°C) are cardinal signs of surgical site infection (SSI)."
+        ]
       },
       {
         id: 59,
@@ -842,9 +726,7 @@
           "Allergy section; NKA",
           "Lab Results section; CBC",
           "Medication section; PO"
-        ],
-        answer: 1,
-        rationale: "NKA stands for 'No Known Allergies', documented prominently in the Allergy section of patient records."
+        ]
       },
       {
         id: 60,
@@ -855,11 +737,28 @@
           "It makes sure all healthcare team members have the same updated information to care for the patient safely.",
           "It keeps the patient from reading their own record.",
           "It allows the staff to finish work early."
-        ],
-        answer: 1,
-        rationale: "Timely and accurate medical charting guarantees continuity of care and legal compliance across the multidisciplinary healthcare team."
+        ]
       }
     ];
+
+    // ตารางไบต์เข้ารหัสเฉลยคำตอบ (Encrypted Answer Key Vault) ด้วยการ Mask แบบ Dynamic Salt ตาม ID ข้อ
+    // ป้องกันการแอบค้นหาคำตอบใน Source Code หรือ Inspect Element
+    const _0xSEC_KEYS = [
+      246, 214, 182, 100, 91, 50, 241, 216, 183, 109,
+      77, 44, 16, 209, 161, 144, 79, 38, 6, 244,
+      169, 130, 122, 80, 4, 254, 214, 188, 99, 90,
+      49, 240, 216, 182, 108, 77, 47, 18, 209, 160,
+      146, 78, 37, 4, 247, 171, 129, 121, 83, 6,
+      254, 212, 187, 98, 89, 48, 246, 218, 181, 108
+    ];
+
+    // ฟังก์ชันคำนวณถอดรหัสเฉลยเฉพาะตอนตรวจคะแนน (Runtime Decryption)
+    function getDecryptedAnswer(qId) {
+      if (!qId || qId < 1 || qId > 60) return -1;
+      const enc = _0xSEC_KEYS[qId - 1];
+      const mask = ((qId * 41 + 103) ^ 0x6E) & 0xFF;
+      return enc ^ mask;
+    }
 
     // ฟังก์ชันสุ่มลำดับคำถามแบบ Fisher-Yates
     function shuffleArray(array) {
@@ -1107,9 +1006,23 @@
             return false;
           }
 
-          // Ctrl+C, Ctrl+V, Ctrl+U, Ctrl+P, Ctrl+S, Ctrl+A
+          // Ctrl+U (View Source)
+          if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'u' || e.keyCode === 85)) {
+            e.preventDefault();
+            triggerSecurityViolation('พยายามเปิดดูซอร์สโค้ด (View Page Source Ctrl+U)');
+            return false;
+          }
+
+          // Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C (Inspect Element)
+          if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['i', 'j', 'c'].includes(e.key.toLowerCase())) {
+            e.preventDefault();
+            triggerSecurityViolation('พยายามเปิดเครื่องมือ Inspect Element');
+            return false;
+          }
+
+          // Ctrl+C, Ctrl+V, Ctrl+S, Ctrl+P, Ctrl+A, Ctrl+X
           if (e.ctrlKey || e.metaKey) {
-            const forbiddenKeys = ['c', 'v', 'u', 's', 'p', 'a', 'x'];
+            const forbiddenKeys = ['c', 'v', 's', 'p', 'a', 'x'];
             if (forbiddenKeys.includes(e.key.toLowerCase())) {
               e.preventDefault();
               triggerSecurityViolation(`พยายามใช้คีย์ลัดห้ามใช้ (Ctrl+${e.key.toUpperCase()})`);
@@ -1128,9 +1041,17 @@
         document.addEventListener('contextmenu', handleContextMenu);
         window.addEventListener('keydown', handleKeyDown);
 
+        // ป้องกันการแงะดูค่าผ่าน Web Console ด้วยการล้าง Console สม่ำเสมอระหว่างสอบ
+        const consoleGuard = setInterval(() => {
+          if (window.console && isStarted && !showResult) {
+            console.clear();
+          }
+        }, 2500);
+
         return () => {
           document.removeEventListener('contextmenu', handleContextMenu);
           window.removeEventListener('keydown', handleKeyDown);
+          clearInterval(consoleGuard);
         };
       }, [isStarted, showResult, triggerSecurityViolation]);
 
@@ -1197,7 +1118,9 @@
       const forceFinishExam = (disqualified = false, currentViolations = []) => {
         let finalScore = 0;
         answers.forEach((ans, idx) => {
-          if (ans === shuffledQuestions[idx]?.answer) {
+          const originalQuestionId = shuffledQuestions[idx]?.id;
+          const correctAnswer = getDecryptedAnswer(originalQuestionId);
+          if (ans !== null && ans === correctAnswer) {
             finalScore++;
           }
         });
