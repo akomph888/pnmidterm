@@ -873,6 +873,7 @@
     // กุญแจจัดเก็บ Session Storage
     const SESSION_KEY = 'BCN_MIDTERM_EXAM_SESSION_V1';
     const ATTEMPTS_KEY = 'BCN_MIDTERM_EXAM_HISTORY_V1';
+    const TEACHER_PIN_DEFAULT = '1234'; // รหัสผ่านสำหรับอาจารย์ผู้คุมสอบ
 
     function MidtermExamApp() {
       const MAX_ATTEMPTS = 1; // ข้อสอบกลางภาค อนุญาต 1 ครั้งมาตรฐาน (หรือปรับได้)
@@ -903,6 +904,16 @@
       const [lockWarningReason, setLockWarningReason] = useState('');
       const [isDisqualified, setIsDisqualified] = useState(false);
       const [confirmSubmitModal, setConfirmSubmitModal] = useState(false);
+
+      // State สำหรับโหมดอาจารย์ผู้คุมสอบ (Instructor Dashboard)
+      const [isTeacherMode, setIsTeacherMode] = useState(false);
+      const [showTeacherAuthModal, setShowTeacherAuthModal] = useState(false);
+      const [teacherPinInput, setTeacherPinInput] = useState('');
+      const [teacherPinError, setTeacherPinError] = useState('');
+      const [searchQuery, setSearchQuery] = useState('');
+      const [filterStatus, setFilterStatus] = useState('ALL'); // ALL, PASSED, FAILED, DISQUALIFIED
+      const [selectedAuditRecord, setSelectedAuditRecord] = useState(null);
+      const [selectedStudentForView, setSelectedStudentForView] = useState(null);
 
       // โหลดประวัติผลสอบเดิมจาก LocalStorage
       useEffect(() => {
@@ -1273,110 +1284,566 @@
         printWin.document.close();
       };
 
+      // ฟังก์ชันล็อกอินโหมดอาจารย์
+      const handleTeacherAuth = (e) => {
+        e.preventDefault();
+        if (teacherPinInput.trim() === TEACHER_PIN_DEFAULT) {
+          setIsTeacherMode(true);
+          setShowTeacherAuthModal(false);
+          setTeacherPinInput('');
+          setTeacherPinError('');
+        } else {
+          setTeacherPinError('รหัส PIN ไม่ถูกต้อง (รหัสเริ่มต้นคือ 1234)');
+        }
+      };
+
+      // แปลงข้อมูลการสอบทั้งหมดออกมาเป็น List เดียว
+      const allSubmittedRecords = useMemo(() => {
+        const list = [];
+        Object.keys(attemptsRecord).forEach((sid) => {
+          const studentAttempts = attemptsRecord[sid] || [];
+          studentAttempts.forEach((rec) => {
+            list.push(rec);
+          });
+        });
+        return list;
+      }, [attemptsRecord]);
+
+      // กรองและค้นหารายชื่อนักศึกษาในตารางอาจารย์
+      const filteredRecords = useMemo(() => {
+        return allSubmittedRecords.filter((rec) => {
+          const matchesQuery = 
+            rec.studentName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            rec.studentId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            rec.seatNumber?.toLowerCase().includes(searchQuery.toLowerCase());
+
+          if (!matchesQuery) return false;
+
+          const isPassed = !rec.disqualified && Number(rec.percentage) >= 60;
+          if (filterStatus === 'PASSED') return isPassed;
+          if (filterStatus === 'FAILED') return !isPassed && !rec.disqualified;
+          if (filterStatus === 'DISQUALIFIED') return rec.disqualified;
+          return true;
+        });
+      }, [allSubmittedRecords, searchQuery, filterStatus]);
+
+      // ฟังก์ชันปลดล็อกให้นักศึกษาทำใหม่ (กรณีเกิดข้อผิดพลาดทางเทคนิค)
+      const handleUnlockStudent = (sId, sName) => {
+        const confirmMsg = `ยืนยันการปลดล็อกสิทธิ์สอบให้แก่:\n${sName} (รหัส ${sId})\n\nเมื่อปลดล็อกแล้ว ประวัติการสอบเดิมจะถูกรีเซ็ต และนักศึกษาจะสามารถล็อกอินเข้าสอบใหม่ได้ทันที`;
+        // สร้าง confirm ด้วย modal หรือตรวจสอบความปลอดภัย
+        if (window.confirm ? window.confirm(confirmMsg) : true) {
+          const updated = { ...attemptsRecord };
+          delete updated[sId];
+          setAttemptsRecord(updated);
+          try {
+            localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(updated));
+            sessionStorage.removeItem(SESSION_KEY);
+          } catch (e) {
+            console.error("Storage update error", e);
+          }
+        }
+      };
+
+      // ฟังก์ชันส่งออกคะแนนเป็นไฟล์ CSV (Excel)
+      const handleExportCSV = () => {
+        if (allSubmittedRecords.length === 0) {
+          return;
+        }
+
+        const headers = ["รหัสนักศึกษา", "ชื่อ-สกุล", "เลขที่นั่ง/เครื่อง", "คะแนน", "คะแนนเต็ม", "ร้อยละ", "ผลประเมิน", "จำนวนครั้งที่หลุดจอ", "วันที่สอบ", "เวลาที่ส่ง"];
+        const rows = allSubmittedRecords.map((r) => [
+          `"${r.studentId}"`,
+          `"${r.studentName}"`,
+          `"${r.seatNumber || '-'}"`,
+          r.score,
+          r.total,
+          `${r.percentage}%`,
+          r.disqualified ? '"ถูกตัดสิทธิ์ (ทุจริต)"' : (Number(r.percentage) >= 60 ? '"ผ่านเกณฑ์"' : '"ไม่ผ่านเกณฑ์"'),
+          r.violationsList ? r.violationsList.length : 0,
+          `"${r.date}"`,
+          `"${r.timestamp}"`
+        ]);
+
+        const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `BCN_Midterm_Exam_Results_${new Date().toISOString().slice(0, 10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
+
+      // ==========================================
+      // มุมมอง: แผงควบคุมอาจารย์ผู้คุมสอบ (TEACHER DASHBOARD)
+      // ==========================================
+      if (isTeacherMode) {
+        const totalCount = allSubmittedRecords.length;
+        const passedCount = allSubmittedRecords.filter(r => !r.disqualified && Number(r.percentage) >= 60).length;
+        const disqualifiedCount = allSubmittedRecords.filter(r => r.disqualified).length;
+        const avgScore = totalCount > 0 
+          ? (allSubmittedRecords.reduce((acc, cur) => acc + (cur.score || 0), 0) / totalCount).toFixed(1) 
+          : '0.0';
+
+        return (
+          <div className="min-h-screen bg-slate-900 text-slate-100 p-4 md:p-8">
+            <div className="max-w-7xl mx-auto space-y-6">
+              
+              {/* Teacher Top Navigation */}
+              <div className="bg-slate-800/90 border border-slate-700 p-6 rounded-3xl backdrop-blur-md flex flex-wrap justify-between items-center gap-4 shadow-xl">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-600/30 border border-indigo-500/40 flex items-center justify-center text-indigo-400">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                        Proctor Mode Active
+                      </span>
+                      <span className="text-xs text-slate-400">วิทยาลัยพยาบาลบรมราชชนนี สุพรรณบุรี</span>
+                    </div>
+                    <h1 className="text-xl md:text-2xl font-black text-white mt-1">
+                      ระบบติดตามและตรวจผลการสอบกลางภาค (Proctor Dashboard)
+                    </h1>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleExportCSV}
+                    disabled={totalCount === 0}
+                    className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 transition shadow-lg shadow-emerald-600/20"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    <span>ดาวน์โหลดคะแนน Excel (CSV)</span>
+                  </button>
+
+                  <button
+                    onClick={() => setIsTeacherMode(false)}
+                    className="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-1.5 transition border border-slate-600"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                    <span>ออกจากโหมดอาจารย์</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Statistics Metric Cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-slate-800/80 border border-slate-700 p-5 rounded-2xl">
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">ผู้ส่งข้อสอบทั้งหมด</p>
+                  <p className="text-3xl font-black text-white mt-1 font-mono-tech">{totalCount} <span className="text-xs text-slate-500 font-normal">คน</span></p>
+                  <p className="text-[11px] text-slate-400 mt-2">จากข้อสอบ 60 ข้อมาตรฐาน</p>
+                </div>
+
+                <div className="bg-slate-800/80 border border-slate-700 p-5 rounded-2xl">
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">คะแนนเฉลี่ย (Average)</p>
+                  <p className="text-3xl font-black text-indigo-400 mt-1 font-mono-tech">{avgScore} <span className="text-xs text-slate-500 font-normal">/ 60</span></p>
+                  <p className="text-[11px] text-slate-400 mt-2">คิดเป็น {totalCount > 0 ? ((avgScore / 60) * 100).toFixed(1) : 0}%</p>
+                </div>
+
+                <div className="bg-slate-800/80 border border-slate-700 p-5 rounded-2xl">
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">สอบผ่านเกณฑ์ (≥ 60%)</p>
+                  <p className="text-3xl font-black text-emerald-400 mt-1 font-mono-tech">{passedCount} <span className="text-xs text-slate-500 font-normal">คน</span></p>
+                  <p className="text-[11px] text-emerald-500/80 mt-2">
+                    {totalCount > 0 ? ((passedCount / totalCount) * 100).toFixed(1) : 0}% ของผู้สอบทั้งหมด
+                  </p>
+                </div>
+
+                <div className="bg-slate-800/80 border border-slate-700 p-5 rounded-2xl">
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">ถูกตัดสิทธิ์ / ทุจริต</p>
+                  <p className="text-3xl font-black text-rose-400 mt-1 font-mono-tech">{disqualifiedCount} <span className="text-xs text-slate-500 font-normal">คน</span></p>
+                  <p className="text-[11px] text-rose-400/80 mt-2">
+                    หลุดจอหรือสลับแท็บเกิน 3 ครั้ง
+                  </p>
+                </div>
+              </div>
+
+              {/* Search, Filter & Student List Table */}
+              <div className="bg-slate-800/80 border border-slate-700 rounded-3xl p-6 shadow-xl space-y-4">
+                
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 pb-4 border-b border-slate-700">
+                  <div className="relative w-full md:w-80">
+                    <svg className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <input
+                      type="text"
+                      placeholder="ค้นหาชื่อ, รหัสนักศึกษา, ที่นั่ง..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs text-slate-400">ตัวกรอง:</span>
+                    {[
+                      { key: 'ALL', label: 'ทั้งหมด' },
+                      { key: 'PASSED', label: 'ผ่านเกณฑ์' },
+                      { key: 'FAILED', label: 'ไม่ผ่าน' },
+                      { key: 'DISQUALIFIED', label: 'ถูกตัดสิทธิ์' }
+                    ].map((tab) => (
+                      <button
+                        key={tab.key}
+                        onClick={() => setFilterStatus(tab.key)}
+                        className={`text-xs px-3 py-1.5 rounded-xl font-bold transition ${
+                          filterStatus === tab.key
+                            ? 'bg-indigo-600 text-white shadow-md'
+                            : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-700'
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Table Content */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-700 text-slate-400 font-bold uppercase text-[11px] tracking-wider">
+                        <th className="py-3 px-3">รหัสนักศึกษา</th>
+                        <th className="py-3 px-3">ชื่อ-นามสกุล</th>
+                        <th className="py-3 px-3 text-center">เครื่อง/ที่นั่ง</th>
+                        <th className="py-3 px-3 text-center">คะแนนดิบ</th>
+                        <th className="py-3 px-3 text-center">ร้อยละ</th>
+                        <th className="py-3 px-3 text-center">ผลการสอบ</th>
+                        <th className="py-3 px-3 text-center">สถิติหลุดจอ</th>
+                        <th className="py-3 px-3 text-center">เวลาที่ส่ง</th>
+                        <th className="py-3 px-3 text-right">การจัดการ</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-700/60">
+                      {filteredRecords.length > 0 ? (
+                        filteredRecords.map((r, idx) => {
+                          const isPassed = !r.disqualified && Number(r.percentage) >= 60;
+                          const violationCount = r.violationsList ? r.violationsList.length : 0;
+
+                          return (
+                            <tr key={idx} className="hover:bg-slate-700/30 transition">
+                              <td className="py-3.5 px-3 font-mono text-slate-300 font-semibold">{r.studentId}</td>
+                              <td className="py-3.5 px-3 font-bold text-white">{r.studentName}</td>
+                              <td className="py-3.5 px-3 text-center text-slate-400 font-mono">{r.seatNumber || "-"}</td>
+                              <td className="py-3.5 px-3 text-center font-bold font-mono-tech text-sm text-indigo-300">
+                                {r.score} <span className="text-[10px] text-slate-500 font-normal">/ {r.total}</span>
+                              </td>
+                              <td className="py-3.5 px-3 text-center font-bold font-mono-tech text-sm text-white">
+                                {r.percentage}%
+                              </td>
+                              <td className="py-3.5 px-3 text-center">
+                                {r.disqualified ? (
+                                  <span className="bg-rose-950 text-rose-300 border border-rose-800 text-[10px] px-2.5 py-1 rounded-full font-bold">
+                                    ถูกตัดสิทธิ์สอบ
+                                  </span>
+                                ) : isPassed ? (
+                                  <span className="bg-emerald-950 text-emerald-300 border border-emerald-800 text-[10px] px-2.5 py-1 rounded-full font-bold">
+                                    ✓ ผ่านเกณฑ์
+                                  </span>
+                                ) : (
+                                  <span className="bg-amber-950 text-amber-300 border border-amber-800 text-[10px] px-2.5 py-1 rounded-full font-bold">
+                                    ✗ ไม่ผ่าน
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-3.5 px-3 text-center">
+                                <button
+                                  onClick={() => setSelectedAuditRecord(r)}
+                                  className={`text-[11px] font-mono-tech font-bold px-2 py-0.5 rounded-lg border transition ${
+                                    violationCount === 0
+                                      ? 'bg-slate-900 text-slate-400 border-slate-700 hover:border-slate-500'
+                                      : violationCount >= 3
+                                        ? 'bg-rose-950 text-rose-400 border-rose-800 animate-pulse'
+                                        : 'bg-amber-950 text-amber-400 border-amber-800'
+                                  }`}
+                                  title="คลิกเพื่อดู Audit Log รายละเอียด"
+                                >
+                                  {violationCount} ครั้ง 🔍
+                                </button>
+                              </td>
+                              <td className="py-3.5 px-3 text-center text-slate-400 font-mono text-[11px]">
+                                {r.timestamp}
+                              </td>
+                              <td className="py-3.5 px-3 text-right">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <button
+                                    onClick={() => setSelectedAuditRecord(r)}
+                                    className="bg-slate-700 hover:bg-slate-600 text-slate-200 px-2.5 py-1 rounded-lg text-[11px] font-bold transition"
+                                    title="ตรวจสอบบันทึกความปลอดภัย"
+                                  >
+                                    Logs
+                                  </button>
+                                  <button
+                                    onClick={() => handleUnlockStudent(r.studentId, r.studentName)}
+                                    className="bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 border border-amber-500/40 px-2.5 py-1 rounded-lg text-[11px] font-bold transition"
+                                    title="ปลดล็อกให้สอบใหม่หากมีเหตุสุดวิสัย"
+                                  >
+                                    ปลดล็อก
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan="9" className="py-12 text-center text-slate-500">
+                            {allSubmittedRecords.length === 0 ? (
+                              <div className="space-y-1">
+                                <p className="text-base">ยังไม่มีนักศึกษาคนใดส่งข้อสอบในเบราว์เซอร์นี้</p>
+                                <p className="text-xs text-slate-600">เมื่อนักศึกษาทำข้อสอบและส่งผล ระบบจะบันทึกข้อมูลและแสดงผลในตารางนี้อัตโนมัติ</p>
+                              </div>
+                            ) : (
+                              'ไม่พบข้อมูลที่ตรงกับคำค้นหาหรือตัวกรอง'
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+              </div>
+
+            </div>
+
+            {/* Modal: ตรวจสอบ Security Audit Logs ของนักศึกษา */}
+            {selectedAuditRecord && (
+              <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+                <div className="max-w-lg w-full bg-slate-900 border border-slate-700 rounded-3xl p-6 text-slate-100 shadow-2xl space-y-4">
+                  <div className="flex justify-between items-start border-b border-slate-800 pb-3">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider bg-indigo-500/20 text-indigo-400 px-2.5 py-0.5 rounded-full border border-indigo-500/30">
+                        Incident Audit Log
+                      </span>
+                      <h3 className="text-lg font-bold text-white mt-1">
+                        {selectedAuditRecord.studentName}
+                      </h3>
+                      <p className="text-xs text-slate-400">
+                        รหัส: {selectedAuditRecord.studentId} • เครื่อง: {selectedAuditRecord.seatNumber || "-"}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setSelectedAuditRecord(null)}
+                      className="text-slate-400 hover:text-white p-1 rounded-lg"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-xs font-bold text-slate-300">
+                      รายการแจ้งเตือนสลับหน้าจอ / หลุดโหมดล็อก ({selectedAuditRecord.violationsList?.length || 0} ครั้ง):
+                    </p>
+                    <div className="bg-slate-950 border border-slate-800 rounded-2xl p-3 max-h-60 overflow-y-auto space-y-2 text-xs">
+                      {selectedAuditRecord.violationsList && selectedAuditRecord.violationsList.length > 0 ? (
+                        selectedAuditRecord.violationsList.map((v, vIdx) => (
+                          <div key={vIdx} className="p-2 rounded-xl bg-slate-900 border border-slate-800/80 flex justify-between items-start gap-2">
+                            <span className="text-rose-400">
+                              <strong className="text-slate-300">#{vIdx + 1}</strong> {v.reason}
+                            </span>
+                            <span className="font-mono text-slate-500 text-[11px] flex-shrink-0">
+                              {v.timestamp} น.
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-emerald-400 py-4 text-center italic">
+                          ✓ ไม่พบประวัติการหลุดหน้าจอหรือสลับแท็บตลอดการสอบ
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-800 flex justify-end">
+                    <button
+                      onClick={() => setSelectedAuditRecord(null)}
+                      className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition"
+                    >
+                      ปิดหน้าต่าง
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+          </div>
+        );
+      }
+
       if (!isStarted) {
         const currentCheckId = studentId.trim();
         const pastHistory = currentCheckId ? (attemptsRecord[currentCheckId] || []) : [];
 
         return (
-          <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex items-center justify-center p-4">
-            <div className="max-w-lg w-full bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20">
-              
-              {/* Header Badge & Title */}
-              <div className="text-center mb-6">
-                <div className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider mb-3">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                  Official Midterm Examination
-                </div>
-                <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">ระบบสอบกลางภาคออนไลน์</h1>
-                <p className="text-slate-600 text-sm mt-1 font-medium">วิทยาลัยพยาบาลบรมราชชนนี สุพรรณบุรี (BCN Suphanburi)</p>
-                <div className="h-1 w-20 bg-indigo-600 mx-auto mt-3 rounded-full"></div>
-              </div>
+          <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex flex-col justify-between p-4">
+            
+            {/* Top Navigation for Instructor Entry */}
+            <div className="max-w-4xl w-full mx-auto flex justify-between items-center py-2">
+              <span className="text-xs text-slate-400 font-medium">ระบบบริหารการสอบกลางภาค BCN Suphanburi</span>
+              <button
+                type="button"
+                onClick={() => setShowTeacherAuthModal(true)}
+                className="inline-flex items-center gap-1.5 bg-slate-800/90 hover:bg-indigo-600/30 text-indigo-300 hover:text-white border border-indigo-500/40 text-xs font-bold px-3 py-1.5 rounded-xl transition duration-150 shadow-sm"
+              >
+                <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                <span>สำหรับอาจารย์ผู้คุมสอบ (Instructor Dashboard)</span>
+              </button>
+            </div>
 
-              {/* Login Form */}
-              <form onSubmit={handleStartExam} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    ชื่อ-นามสกุล นักศึกษา <span className="text-rose-500">*</span>
-                  </label>
-                  <input 
-                    type="text" required
-                    className="block w-full border border-slate-300 rounded-xl px-4 py-3 text-slate-900 shadow-sm focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none transition bg-white"
-                    placeholder="เช่น น.ส. รัตนา วิจิตรศิลป์"
-                    value={userName} onChange={(e) => setUserName(e.target.value)}
-                  />
+            <div className="flex-1 flex items-center justify-center py-4">
+              <div className="max-w-lg w-full bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20">
+                
+                {/* Header Badge & Title */}
+                <div className="text-center mb-6">
+                  <div className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider mb-3">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Official Midterm Examination
+                  </div>
+                  <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">ระบบสอบกลางภาคออนไลน์</h1>
+                  <p className="text-slate-600 text-sm mt-1 font-medium">วิทยาลัยพยาบาลบรมราชชนนี สุพรรณบุรี (BCN Suphanburi)</p>
+                  <div className="h-1 w-20 bg-indigo-600 mx-auto mt-3 rounded-full"></div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Login Form */}
+                <form onSubmit={handleStartExam} className="space-y-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                      รหัสประจำตัวนักศึกษา <span className="text-rose-500">*</span>
+                      ชื่อ-นามสกุล นักศึกษา <span className="text-rose-500">*</span>
                     </label>
                     <input 
                       type="text" required
                       className="block w-full border border-slate-300 rounded-xl px-4 py-3 text-slate-900 shadow-sm focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none transition bg-white"
-                      placeholder="เช่น 6601234567"
-                      value={studentId} onChange={(e) => {
-                        setStudentId(e.target.value);
-                        setLoginError('');
-                      }}
+                      placeholder="เช่น น.ส. รัตนา วิจิตรศิลป์"
+                      value={userName} onChange={(e) => setUserName(e.target.value)}
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                      เลขที่นั่งสอบ / เครื่องคอมพิวเตอร์
-                    </label>
-                    <input 
-                      type="text"
-                      className="block w-full border border-slate-300 rounded-xl px-4 py-3 text-slate-900 shadow-sm focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none transition bg-white"
-                      placeholder="เช่น PC-05"
-                      value={seatNumber} onChange={(e) => setSeatNumber(e.target.value)}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        รหัสประจำตัวนักศึกษา <span className="text-rose-500">*</span>
+                      </label>
+                      <input 
+                        type="text" required
+                        className="block w-full border border-slate-300 rounded-xl px-4 py-3 text-slate-900 shadow-sm focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none transition bg-white"
+                        placeholder="เช่น 6601234567"
+                        value={studentId} onChange={(e) => {
+                          setStudentId(e.target.value);
+                          setLoginError('');
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        เลขที่นั่งสอบ / เครื่องคอมพิวเตอร์
+                      </label>
+                      <input 
+                        type="text"
+                        className="block w-full border border-slate-300 rounded-xl px-4 py-3 text-slate-900 shadow-sm focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 outline-none transition bg-white"
+                        placeholder="เช่น PC-05"
+                        value={seatNumber} onChange={(e) => setSeatNumber(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Exam History Indicator */}
+                  {pastHistory.length > 0 && (
+                    <div className="bg-amber-50 border border-amber-300 p-3.5 rounded-xl text-xs space-y-1 text-amber-900">
+                      <p className="font-bold flex items-center gap-1.5">
+                        <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        สถานะการสอบของรหัสนี้:
+                      </p>
+                      <p>ท่านได้ส่งข้อสอบไปแล้วเมื่อ {pastHistory[0]?.timestamp} ({pastHistory[0]?.date}) คะแนน: <strong>{pastHistory[0]?.score}/{pastHistory[0]?.total}</strong></p>
+                      <p className="text-rose-600 font-bold">⚠️ ข้อสอบกลางภาคไม่อนุญาตให้ทำซ้ำ หากมีข้อขัดข้องกรุณาแจ้งอาจารย์คุมสอบเพื่อขอปลดล็อก</p>
+                    </div>
+                  )}
+
+                  {loginError && (
+                    <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs p-3 rounded-xl flex items-center gap-2">
+                      <svg className="w-4 h-4 text-rose-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                      <span>{loginError}</span>
+                    </div>
+                  )}
+
+                  {/* Security Instructions Warning */}
+                  <div className="bg-slate-900 text-slate-200 p-4 rounded-2xl text-xs space-y-2 border border-slate-700 shadow-inner">
+                    <div className="flex items-center gap-2 font-bold text-amber-400 text-sm">
+                      <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                      กฎระเบียบและระบบล็อกหน้าจอป้องกันการทุจริต:
+                    </div>
+                    <ul className="list-disc list-inside space-y-1 text-slate-300">
+                      <li>ข้อสอบมีทั้งหมด <strong>60 ข้อ (เวลา 60 นาที)</strong></li>
+                      <li>เมื่อกดเริ่มสอบ ระบบจะ <strong>บังคับเข้าสู่โหมดเต็มจอ (Fullscreen Lock)</strong> ทันที</li>
+                      <li><strong>ห้ามสลับหน้าจอ ห้ามกด Alt+Tab และห้ามเปิดแท็บอื่น</strong> ระบบจะบันทึกเวลาที่สลับทันที</li>
+                      <li>หากตรวจพบการหลุดหน้าจอหรือสลับแท็บเกิน <strong>{MAX_VIOLATIONS} ครั้ง</strong> ระบบจะ <strong>ตัดสิทธิ์สอบและส่งกระดาษคำตอบทันที</strong></li>
+                      <li>ระบบมีการบันทึก <strong>Session ป้องกันการรีเฟรช</strong> หากเผลอกดปิดหรือโหลดใหม่จะกลับมาทำต่อทันทีโดยเวลาไม่ถูกรีเซ็ต</li>
+                    </ul>
+                  </div>
+
+                  <button 
+                    type="submit"
+                    disabled={pastHistory.length >= MAX_ATTEMPTS}
+                    className="w-full bg-gradient-to-r from-blue-700 via-indigo-700 to-indigo-800 text-white font-extrabold py-4 px-6 rounded-2xl hover:from-blue-800 hover:to-indigo-900 transition duration-200 shadow-xl shadow-indigo-600/30 transform active:scale-[0.99] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <svg className="w-5 h-5 text-indigo-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"/></svg>
+                    <span>ยืนยันตัวตนและเข้าสู่การสอบ</span>
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            {/* Modal: รหัสผ่านยืนยันสิทธิ์อาจารย์ผู้คุมสอบ */}
+            {showTeacherAuthModal && (
+              <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+                <div className="max-w-sm w-full bg-slate-900 border border-slate-700 rounded-3xl p-6 text-white text-center shadow-2xl">
+                  <div className="w-12 h-12 bg-indigo-500/20 text-indigo-400 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                  </div>
+                  <h4 className="text-lg font-bold">เข้าสู่แผงควบคุมอาจารย์ผู้คุมสอบ</h4>
+                  <p className="text-xs text-slate-400 mt-1">กรุณากรอกรหัส PIN เพื่อยืนยันตัวตนอาจารย์</p>
+                  
+                  <form onSubmit={handleTeacherAuth} className="mt-4 space-y-3">
+                    <input
+                      type="password"
+                      autoFocus
+                      maxLength={6}
+                      placeholder="กรอกรหัส PIN (เริ่มต้น 1234)"
+                      value={teacherPinInput}
+                      onChange={(e) => setTeacherPinInput(e.target.value)}
+                      className="w-full text-center tracking-widest text-lg font-mono bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
                     />
-                  </div>
+
+                    {teacherPinError && (
+                      <p className="text-rose-400 text-xs">{teacherPinError}</p>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowTeacherAuthModal(false);
+                          setTeacherPinInput('');
+                          setTeacherPinError('');
+                        }}
+                        className="py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition"
+                      >
+                        ยกเลิก
+                      </button>
+                      <button
+                        type="submit"
+                        className="py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition shadow-md"
+                      >
+                        เข้าสู่ระบบ
+                      </button>
+                    </div>
+                  </form>
                 </div>
+              </div>
+            )}
 
-                {/* Exam History Indicator */}
-                {pastHistory.length > 0 && (
-                  <div className="bg-amber-50 border border-amber-300 p-3.5 rounded-xl text-xs space-y-1 text-amber-900">
-                    <p className="font-bold flex items-center gap-1.5">
-                      <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                      สถานะการสอบของรหัสนี้:
-                    </p>
-                    <p>ท่านได้ส่งข้อสอบไปแล้วเมื่อ {pastHistory[0]?.timestamp} ({pastHistory[0]?.date}) คะแนน: <strong>{pastHistory[0]?.score}/{pastHistory[0]?.total}</strong></p>
-                    <p className="text-rose-600 font-bold">⚠️ ข้อสอบกลางภาคไม่อนุญาตให้ทำซ้ำ หากมีข้อขัดข้องกรุณาติดต่ออาจารย์คุมสอบ</p>
-                  </div>
-                )}
-
-                {loginError && (
-                  <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs p-3 rounded-xl flex items-center gap-2">
-                    <svg className="w-4 h-4 text-rose-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <span>{loginError}</span>
-                  </div>
-                )}
-
-                {/* Security Instructions Warning */}
-                <div className="bg-slate-900 text-slate-200 p-4 rounded-2xl text-xs space-y-2 border border-slate-700 shadow-inner">
-                  <div className="flex items-center gap-2 font-bold text-amber-400 text-sm">
-                    <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                    กฎระเบียบและระบบล็อกหน้าจอป้องกันการทุจริต:
-                  </div>
-                  <ul className="list-disc list-inside space-y-1 text-slate-300">
-                    <li>ข้อสอบมีทั้งหมด <strong>60 ข้อ (เวลา 60 นาที)</strong></li>
-                    <li>เมื่อกดเริ่มสอบ ระบบจะ <strong>บังคับเข้าสู่โหมดเต็มจอ (Fullscreen Lock)</strong> ทันที</li>
-                    <li><strong>ห้ามสลับหน้าจอ ห้ามกด Alt+Tab และห้ามเปิดแท็บอื่น</strong> ระบบจะบันทึกเวลาที่สลับทันที</li>
-                    <li>หากตรวจพบการหลุดหน้าจอหรือสลับแท็บเกิน <strong>{MAX_VIOLATIONS} ครั้ง</strong> ระบบจะ <strong>ตัดสิทธิ์สอบและส่งกระดาษคำตอบทันที</strong></li>
-                    <li>ระบบมีการบันทึก <strong>Session ป้องกันการรีเฟรช</strong> หากเผลอกดปิดหรือโหลดใหม่จะกลับมาทำต่อทันทีโดยเวลาไม่ถูกรีเซ็ต</li>
-                  </ul>
-                </div>
-
-                <button 
-                  type="submit"
-                  disabled={pastHistory.length >= MAX_ATTEMPTS}
-                  className="w-full bg-gradient-to-r from-blue-700 via-indigo-700 to-indigo-800 text-white font-extrabold py-4 px-6 rounded-2xl hover:from-blue-800 hover:to-indigo-900 transition duration-200 shadow-xl shadow-indigo-600/30 transform active:scale-[0.99] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <svg className="w-5 h-5 text-indigo-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"/></svg>
-                  <span>ยืนยันตัวตนและเข้าสู่การสอบ</span>
-                </button>
-              </form>
+            <div className="text-center text-[11px] text-slate-500 py-1">
+              วิทยาลัยพยาบาลบรมราชชนนี สุพรรณบุรี • BCN Suphanburi Examination System
             </div>
           </div>
         );
@@ -1502,7 +1969,7 @@
 
                 </div>
 
-                {/* Print and Review Buttons */}
+                {/* Print and Action Controls */}
                 <div className="flex flex-wrap justify-center gap-3 pt-6 border-t border-slate-100 no-print">
                   <button 
                     onClick={handlePrint}
@@ -1512,13 +1979,14 @@
                     พิมพ์เอกสารรับรองคะแนน / PDF
                   </button>
 
-                  <button 
-                    onClick={() => setShowReview(!showReview)}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold shadow-md hover:shadow-lg transition transform active:scale-95 flex items-center gap-2"
+                  {/* ล็อกเฉลยคำตอบ (Disable Answer Key) */}
+                  <div 
+                    className="bg-slate-100 text-slate-400 border border-slate-200 px-5 py-3 rounded-xl font-bold text-xs flex items-center gap-2 cursor-not-allowed select-none"
+                    title="ระบบปิดการแสดงเฉลยเพื่อความปลอดภัยของการสอบกลางภาค"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    <span>{showReview ? 'ซ่อนเฉลยคำตอบ' : 'ตรวจทานคำตอบและคำอธิบาย (60 ข้อ)'}</span>
-                  </button>
+                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                    <span>ระบบเฉลยคำตอบถูกล็อก (Answer Key Locked)</span>
+                  </div>
 
                   <button 
                     onClick={() => {
@@ -1532,51 +2000,13 @@
                     ออกจากระบบสอบ
                   </button>
                 </div>
-              </div>
 
-              {/* Comprehensive Answer Review List */}
-              {showReview && (
-                <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-sm space-y-4 no-print">
-                  <h3 className="text-xl font-bold text-slate-900 border-b pb-3 flex items-center gap-2">
-                    <span className="bg-indigo-100 text-indigo-700 w-8 h-8 rounded-full flex items-center justify-center text-sm font-extrabold">✓</span>
-                    เฉลยคำตอบและคำอธิบายวิชาการรายข้อ (Midterm 60 ข้อ)
-                  </h3>
-
-                  <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-                    {shuffledQuestions.map((item, idx) => {
-                      const userAns = answers[idx];
-                      const isCorrect = userAns === item.answer;
-
-                      return (
-                        <div key={idx} className={`p-4 rounded-2xl border ${isCorrect ? 'border-emerald-200 bg-emerald-50/40' : 'border-rose-200 bg-rose-50/40'}`}>
-                          <div className="flex items-start justify-between gap-3">
-                            <span className="font-bold text-slate-800 text-sm">
-                              ข้อที่ {idx + 1}. {item.question}
-                            </span>
-                            <span className={`text-xs px-2.5 py-1 rounded-full font-bold flex-shrink-0 ${isCorrect ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'}`}>
-                              {isCorrect ? 'ถูกต้อง' : 'ตอบผิด'}
-                            </span>
-                          </div>
-
-                          <div className="mt-3 space-y-1.5 text-xs">
-                            <p className="text-slate-700">
-                              <span className="font-semibold">คำตอบของคุณ:</span> {userAns !== null ? `${String.fromCharCode(65 + userAns)}) ${item.options[userAns]}` : '(ไม่ได้ตอบ)'}
-                            </p>
-                            {!isCorrect && (
-                              <p className="text-emerald-700 font-semibold">
-                                <span className="font-bold">คำตอบที่ถูกต้อง:</span> {String.fromCharCode(65 + item.answer)}) {item.options[item.answer]}
-                              </p>
-                            )}
-                            <p className="text-slate-600 bg-white/90 p-2.5 rounded-xl border border-slate-200/80 mt-1">
-                              💡 <strong>เหตุผลทางวิชาการ (Rationale):</strong> {item.rationale}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                {/* ข้อความแจ้งเตือนการปิดเฉลยข้อสอบ */}
+                <div className="mt-4 p-3.5 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 flex items-center justify-center gap-2 text-center no-print">
+                  <svg className="w-5 h-5 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                  <span><strong>ประกาศความปลอดภัย:</strong> ระบบปิดการแสดงเฉลยคำตอบและเหตุผลทางวิชาการ (Disabled Answer Key) ชั่วคราว โดยอาจารย์ผู้สอนจะประกาศเฉลยอย่างเป็นทางการหลังจากเสร็จสิ้นการจัดสอบทุกกลุ่ม</span>
                 </div>
-              )}
+              </div>
 
             </div>
           </div>
