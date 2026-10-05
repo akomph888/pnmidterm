@@ -1309,7 +1309,7 @@
           setTeacherPinInput('');
           setTeacherPinError('');
         } else {
-          setTeacherPinError('รหัส PIN ไม่ถูกต้อง (รหัสเริ่มต้นคือ 1234)');
+          setTeacherPinError('รหัส PIN ไม่ถูกต้อง');
         }
       };
 
@@ -1824,7 +1824,7 @@
                       type="password"
                       autoFocus
                       maxLength={6}
-                      placeholder="กรอกรหัส PIN (เริ่มต้น 1234)"
+                      placeholder="กรอกรหัส PIN"
                       value={teacherPinInput}
                       onChange={(e) => setTeacherPinInput(e.target.value)}
                       className="w-full text-center tracking-widest text-lg font-mono bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500"
