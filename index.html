@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Midterm Examination: Practical Nursing & Medical Terminology</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -27,9 +27,10 @@
       font-family: 'Chakra Petch', monospace;
     }
 
-    /* ป้องกันการลากรูปหรือเลือกข้อความ */
+    /* ป้องกันการลากรูป เลือกข้อความ หรือแตะค้างบนมือถือ */
     * {
       -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
     @media print {
@@ -983,15 +984,22 @@
           const elem = document.documentElement;
           if (elem.requestFullscreen) {
             await elem.requestFullscreen();
+            setIsFullscreen(true);
           } else if (elem.webkitRequestFullscreen) {
             await elem.webkitRequestFullscreen();
+            setIsFullscreen(true);
           } else if (elem.msRequestFullscreen) {
             await elem.msRequestFullscreen();
+            setIsFullscreen(true);
+          } else {
+            // กรณีเป็น iPhone / iOS Safari ที่ไม่รองรับ Fullscreen API บน Document
+            setIsFullscreen(true);
           }
-          setIsFullscreen(true);
           setShowLockWarningModal(false);
         } catch (err) {
-          console.warn("Fullscreen permission denied or error:", err);
+          // หากเบราว์เซอร์มือถือปฏิเสธ ให้ยอมรับสถานะและปิด modal เพื่อไม่ให้ผู้สอบติดค้าง
+          setIsFullscreen(true);
+          setShowLockWarningModal(false);
         }
       };
 
@@ -1011,7 +1019,7 @@
               forceFinishExam(true, updated);
             }, 600);
           } else {
-            setLockWarningReason(`ตรวจพบการละเมิด: "${reason}" (ครั้งที่ ${updated.length}/${MAX_VIOLATIONS}) กรุณากดปุ่มด้านล่างเพื่อล็อกหน้าจอกลับสู่โหมดเต็มจอ`);
+            setLockWarningReason(`ตรวจพบการละเมิด: "${reason}" (ครั้งที่ ${updated.length}/${MAX_VIOLATIONS}) กรุณากดปุ่มด้านล่างเพื่อยืนยันและกลับเข้าสู่หน้าจอสอบ`);
             setShowLockWarningModal(true);
           }
           return updated;
@@ -1028,8 +1036,11 @@
             document.msFullscreenElement
           );
           setIsFullscreen(isCurrentlyFull);
-          if (isStarted && !showResult && !isCurrentlyFull) {
-            triggerSecurityViolation('ออกจากโหมดเต็มจอ (Exited Fullscreen)');
+          // ทำงานเฉพาะอุปกรณ์ที่รองรับ Fullscreen API จริงๆ
+          if (document.fullscreenEnabled || document.webkitFullscreenEnabled) {
+            if (isStarted && !showResult && !isCurrentlyFull) {
+              triggerSecurityViolation('ออกจากโหมดเต็มจอ (Exited Fullscreen)');
+            }
           }
         };
 
@@ -1046,30 +1057,35 @@
         };
       }, [isStarted, showResult, triggerSecurityViolation]);
 
-      // ตรวจจับการสลับแท็บ ยุบเบราว์เซอร์ หรือคลิกออกนอกหน้าต่าง (Visibility & Blur)
+      // ตรวจจับการสลับแท็บ ยุบเบราว์เซอร์ หรือสลับแอปบนมือถือ (Visibility, Pagehide & Blur)
       useEffect(() => {
         if (!isStarted || showResult) return;
 
         const handleVisibilityChange = () => {
           if (document.hidden) {
-            triggerSecurityViolation('สลับหน้าต่างหรือแท็บอื่น (Tab Switch / Hidden Window)');
+            triggerSecurityViolation('สลับหน้าต่างหรือแท็บอื่น / สลับแอปบนมือถือ (Hidden Window / App Switch)');
           }
         };
 
+        const handlePageHide = () => {
+          triggerSecurityViolation('ยุบหน้าจอหรือสลับแอปพลิเคชัน (Pagehide / Minimized)');
+        };
+
         const handleWindowBlur = () => {
-          // หน่วงเวลาเล็กน้อยเพื่อกัน false positive จาก iframe หรือ dialog ภายใน
           setTimeout(() => {
             if (document.hidden) {
               triggerSecurityViolation('คลิกออกนอกหน้าจอสอบ (Window Focus Lost)');
             }
-          }, 300);
+          }, 350);
         };
 
         document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('pagehide', handlePageHide);
         window.addEventListener('blur', handleWindowBlur);
 
         return () => {
           document.removeEventListener('visibilitychange', handleVisibilityChange);
+          window.removeEventListener('pagehide', handlePageHide);
           window.removeEventListener('blur', handleWindowBlur);
         };
       }, [isStarted, showResult, triggerSecurityViolation]);
@@ -1787,7 +1803,7 @@
                     className="w-full bg-gradient-to-r from-blue-700 via-indigo-700 to-indigo-800 text-white font-extrabold py-4 px-6 rounded-2xl hover:from-blue-800 hover:to-indigo-900 transition duration-200 shadow-xl shadow-indigo-600/30 transform active:scale-[0.99] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <svg className="w-5 h-5 text-indigo-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"/></svg>
-                    <span>ยืนยันตัวตนและเข้าสู่การสอบ</span>
+                    <span>ยืนยันตัวตนและเข้าสู่การสอบแบบล็อกหน้าจอ</span>
                   </button>
                 </form>
               </div>
